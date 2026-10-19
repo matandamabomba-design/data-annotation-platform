@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 64" role="img" aria-label="Mastercard and Visa">
+  <circle cx="38" cy="27" r="20" fill="#eb001b"/>
+  <circle cx="62" cy="27" r="20" fill="#f79e1b"/>
+  <path d="M50 12a20 20 0 0 1 0 30 20 20 0 0 1 0-30" fill="#ff5f00"/>
+  <path fill="#1a1f71" d="M97 14h13l-7 29H91zm18 0h11c5 0 7 2 8 6l5 23h-12l-1-4h-10l-2 4h-12zm12 19-2-11-6 11z"/>
+  <text x="50" y="59" fill="#182230" font-family="Arial,sans-serif" font-size="10" font-weight="700" text-anchor="middle">Mastercard</text>
+  <text x="123" y="59" fill="#182230" font-family="Arial,sans-serif" font-size="10" font-weight="700" text-anchor="middle">VISA</text>
+</svg>

@@ -1,35 +1,3 @@
-:root {
-  --bg: #f2f5f7;
-  --surface: #ffffff;
-  --ink: #14213d;
-  --muted: #52607a;
-  --line: #d5dce5;
-  --pos: #b7ebc6;
-  --neg: #ffc2cc;
-  --neu: #cfe0ff;
-  --good: #0b6b4f;
-  --bad: #a8321f;
-  --btn: #14213d;
-  --onbtn: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1624;
-    --surface: #182136;
-    --ink: #e8edf6;
-    --muted: #9fb0cc;
-    --line: #2c3a57;
-    --pos: #1f5a3a;
-    --neg: #6b2a37;
-    --neu: #27427a;
-    --good: #6fe0b0;
-    --bad: #ff9a86;
-    --btn: #e8edf6;
-    --onbtn: #0f1624;
-  }
-}
-
 * { box-sizing: border-box; }
 
 html,
@@ -39,18 +7,24 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 1.0625rem;
+  font-size: 1rem;
   line-height: 1.55;
 }
 
 main {
-  max-width: 44rem;
+  max-width: 58rem;
   margin: 0 auto;
-  padding: 1.5rem 1rem 4rem;
+  padding: var(--space-5) var(--space-4) 2rem;
+}
+
+#intro,
+#work,
+#done {
+  min-height: calc(100vh - 180px);
 }
 
 h1 {
-  font-size: 2rem;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
   line-height: 1.2;
   margin: 0.2rem 0 0.5rem;
 }
@@ -67,9 +41,10 @@ p { margin: 0.4rem 0; }
 .panel {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   padding: 1rem 1.1rem;
   margin: 1.1rem 0;
+  box-shadow: var(--shadow-card);
 }
 
 label {
@@ -82,7 +57,7 @@ input[type="text"] {
   width: 100%;
   padding: 0.65rem 0.75rem;
   border: 2px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
@@ -93,25 +68,25 @@ button {
   cursor: pointer;
 }
 
-button:focus-visible,
-input:focus-visible {
-  outline: 3px solid #e0a800;
-  outline-offset: 2px;
-}
-
 .primary,
 .ghost,
 .opt {
-  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease, background-color 0.15s ease;
 }
 
 .primary {
   background: var(--btn);
   color: var(--onbtn);
   border: 0;
-  border-radius: 8px;
-  padding: 0.7rem 1.3rem;
+  border-radius: var(--radius-control);
+  padding: 0.7rem 1.15rem;
   font-weight: 700;
+  box-shadow: 0 5px 14px rgba(27, 95, 193, 0.18);
+}
+
+.primary:hover {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
 }
 
 .primary:disabled {
@@ -123,8 +98,13 @@ input:focus-visible {
   background: transparent;
   color: var(--ink);
   border: 2px solid var(--line);
-  border-radius: 8px;
-  padding: 0.65rem 1.1rem;
+  border-radius: var(--radius-control);
+  padding: 0.6rem 0.95rem;
+}
+
+.ghost:hover {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
 }
 
 .guide {
@@ -141,13 +121,13 @@ mark.k {
 }
 
 .k.pos,
-.sent.pos { background: var(--pos); }
+.sent.pos { background: var(--pos-bg); color: var(--pos-ink); }
 
 .k.neg,
-.sent.neg { background: var(--neg); }
+.sent.neg { background: var(--neg-bg); color: var(--neg-ink); }
 
 .k.neu,
-.sent.neu { background: var(--neu); }
+.sent.neu { background: var(--neu-bg); color: var(--neu-ink); }
 
 .top {
   display: flex;
@@ -171,7 +151,7 @@ mark.k {
   display: block;
   height: 100%;
   width: 0;
-  background: var(--ink);
+  background: var(--brand);
 }
 
 .sent {
@@ -199,7 +179,7 @@ mark.k {
   background: var(--surface);
   color: var(--ink);
   border: 2px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   padding: 0.9rem 0.5rem;
   font-weight: 700;
   text-align: center;
@@ -216,9 +196,9 @@ mark.k {
   box-shadow: inset 0 -6px 0 var(--sw);
 }
 
-.opt.pos { --sw: var(--pos); }
-.opt.neg { --sw: var(--neg); }
-.opt.neu { --sw: var(--neu); }
+.opt.pos { --sw: var(--pos-bg); }
+.opt.neg { --sw: var(--neg-bg); }
+.opt.neu { --sw: var(--neu-bg); }
 
 .nav {
   display: flex;
@@ -236,6 +216,16 @@ mark.k {
 .row {
   border-top: 1px solid var(--line);
   padding: 0.8rem 0;
+}
+
+@media (max-width: 34rem) {
+  main { padding: var(--space-4) var(--space-3) 1rem; }
+  .sent { font-size: 1.35rem; }
+  .opts { gap: 0.4rem; }
+  .opt { padding: 0.75rem 0.25rem; }
+  .nav { align-items: center; }
+  .nav span { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.4rem; }
+  .nav button { padding: 0.6rem 0.75rem; }
 }
 
 .row:first-child { border-top: 0; }

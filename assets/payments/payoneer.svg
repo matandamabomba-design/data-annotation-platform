@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 64" role="img" aria-label="Payoneer">
+  <path fill="#ff4800" d="M13 10h27c14 0 22 8 19 21-3 13-12 20-27 20H22l-3 10H7zm14 13-3 16h8c7 0 10-3 11-8 1-5-2-8-8-8z"/>
+  <path fill="#ff4800" d="M70 20h10l-7 31H63zm4-12h11l-2 8H72zM91 20h10l-1 5c3-4 7-6 13-6 9 0 13 6 11 15l-4 17h-10l4-16c1-5-1-8-5-8-5 0-9 3-10 9l-3 15H86z"/>
+  <text x="127" y="42" fill="#17345d" font-family="Arial,sans-serif" font-size="15" font-weight="700">Payoneer</text>
+</svg>

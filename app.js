@@ -1,3 +1,5 @@
+const BOT_NAME = "Ask Matanda";
+
 /* ---------- Firebase settings: paste yours from Project settings > Your apps > Web app ---------- */
 const FIREBASE_CONFIG = {
   apiKey: "",
@@ -212,17 +214,21 @@ function gate() {
       <p><button class="pr" data-act="enter">Enter the hub</button></p>
     </div>
   `);
+  document.body.classList.add("home-screen");
+  document.body.classList.remove("board-screen");
 }
 
 function board() {
   const list = JOBS.filter((job) => filter === "all" || job.type === filter);
 
   draw(`
-    <div class="bar">
-      <h1>Open jobs</h1>
-      <span class="mu">${esc(name)} <button class="gh" data-act="rename">Change name</button></span>
+    <div class="board-hero">
+      <div class="bar">
+        <h1>Open jobs</h1>
+        <span>${esc(name)} <button class="gh" data-act="rename">Change name</button></span>
+      </div>
+      <p>New to this? <a href="practice.html" target="_blank" rel="noopener">Practise with timed drills</a> before you take a test.</p>
     </div>
-    <p class="mu">New to this? <a href="practice.html" target="_blank" rel="noopener">Practise with timed drills</a> before you take a test.</p>
     <div class="tabs">
       ${[
         ["all", "All jobs"],
@@ -263,6 +269,8 @@ function board() {
       )
       .join("")}
   `);
+  document.body.classList.remove("home-screen");
+  document.body.classList.add("board-screen");
 }
 
 function openJob(id) {
@@ -596,6 +604,7 @@ function showSubmissionReceipt(job, progress) {
       <p class="mu">${statusText(submission.saveResult)} The training answer key is hidden until the simulated QA review.</p>
       <button class="pr" data-act="review-qa" data-id="${job.id}">Continue to quality review</button>
       <button class="gh" data-act="offer" data-id="${job.id}">Review project brief</button>
+      <button class="gh" data-act="back">Back to jobs</button>
     </div>
   `);
 }
@@ -941,16 +950,16 @@ async function report(id) {
 }
 
 
-/* ---------- Practice onboarding: fake phone, identity and payment steps, plus a fake support bot ---------- */
+/* ---------- Practice onboarding: simulated phone, identity, payment, and chat steps ---------- */
 const acct = { phone: false, id: false, pay: "" };
 let pendingJob = null, idState = null, tickPhone = null, phoneNum = "", chatStarted = false;
 const COUNTRIES = ["Uganda", "Democratic Republic of the Congo", "Kenya", "Rwanda", "Burundi", "South Sudan", "Tanzania", "Ethiopia", "Somalia", "Nigeria", "Ghana", "Other"];
 const DOCS = ["Passport", "National ID card", "Driver’s licence", "Refugee ID or attestation", "Residence permit"];
 const PAY = [
-  { id: "PayPal", links: [["Open PayPal", "https://www.paypal.com/"]] },
-  { id: "Payoneer", links: [["Open Payoneer", "https://www.payoneer.com/"]] },
-  { id: "Mastercard or Visa card", links: [["Open Mastercard", "https://www.mastercard.com/"], ["Open Visa", "https://www.visa.com/"]] },
-  { id: "Bank account", links: [], note: "Ask your bank which details it needs to receive payments from abroad." },
+  { id: "PayPal", icon: "paypal.svg", links: [["Open PayPal", "https://www.paypal.com/"]] },
+  { id: "Payoneer", icon: "payoneer.svg", links: [["Open Payoneer", "https://www.payoneer.com/"]] },
+  { id: "Mastercard or Visa card", icon: "cards.svg", links: [["Open Mastercard", "https://www.mastercard.com/"], ["Open Visa", "https://www.visa.com/"]] },
+  { id: "Bank account", icon: "bank.svg", links: [], note: "Ask your bank which details it needs to receive payments from abroad." },
 ];
 const BOT = [
   [/phone|code|sms|text message/i, "If the code does not arrive, check the number and country code, wait a minute, then ask for a new code. Still stuck? Tell us your country and phone network."],
@@ -959,7 +968,7 @@ const BOT = [
   [/scam|fee|real|legit|trust/i, "Real platforms do not ask you to pay to start work or to share bank details in chat. Stay on the official platform and report anything that asks for money."],
   [/^\s*(hi|hello|hey)\b/i, "Hello! Tell us what is not working and we will help."],
 ];
-const FALLBACK = "Thank you. We have created a support ticket. To help us, include: your country, the document or payment type, what you did, and the exact message you saw. A specialist replies within 1 to 2 working days. (Practice bot: no real agent will reply.)";
+const FALLBACK = "This is an automatic practice reply, not a support ticket. For useful practice feedback, include your country, the document or payment type, what you did and the exact message you saw. No real specialist will reply.";
 
 const modal = (html) => {
   let m = document.getElementById("modal");
@@ -1028,9 +1037,9 @@ function idView() {
     const side = s.s === 3 ? "front" : "back";
     return h(`Upload the ${side} of your document`, `<p class="no">Do not upload your real document on this practice site. Use the sample.</p>
       <p><button class="pr" data-x="idsample">Use a sample document</button></p>
-      <label class="f" for="fl">Or choose any harmless image</label><input id="fl" type="file" accept="image/*" capture="environment">
-      <p><button class="gh" data-x="idfile">Use this image</button></p><p class="mu">${s[side] || "No image yet"}</p>
-      ${s[side] ? '<p><button class="pr" data-x="idnext">Continue</button></p>' : ""}`);
+      <label class="f" for="fl">Or choose any harmless image (maximum 5 MB)</label><input id="fl" type="file" accept="image/*" capture="environment">
+      <p class="mu" id="id-status" aria-live="polite">${s[side] || "No image selected"}</p>
+      <p><button class="pr${s[side] ? "" : " hidden"}" id="id-continue" data-x="idnext">Continue</button></p>`);
   }
   if (s.s === 5) return h("Checking your document", "<p>Please wait. On real platforms this can take minutes or hours.</p>");
   h("Document approved", '<p class="ok">Your document was approved. You can start working.</p><p><button class="pr" data-x="idfin">Continue</button></p>');
@@ -1039,43 +1048,153 @@ function idView() {
 function payView(m) {
   const p = PAY.find((x) => x.id === m);
   draw(`<button class="gh" data-act="back">Cancel</button><h1>Payment method</h1>
-    <p class="mu">Practice mode. Never type real card numbers, passwords or bank details here.</p>
-    <div class="panel">${PAY.map((x) => `<button class="${x.id === m ? "pr" : "gh"}" data-x="paypick" data-m="${x.id}">${x.id}</button>`).join(" ")}</div>
-    ${p ? `<div class="panel"><h2>${p.id}</h2>
+    <p class="mu">Practice mode. Never type real passwords or payment details here.</p>
+    <div class="payment-options" role="group" aria-label="Choose a payment method">${PAY.map((x) => `<button type="button" class="gh payment-option" data-x="paypick" data-m="${x.id}" aria-pressed="${x.id === m}"><img class="payment-icon" src="assets/payments/${x.icon}" alt="${esc(x.id)} logo"><span>${esc(x.id)}</span></button>`).join("")}</div>
+    ${p ? `<div class="panel"><h2>${esc(p.id)}</h2>
       <p class="mu">Check that this works in your country and what it charges before you create an account.</p>
       ${p.note ? `<p>${p.note}</p>` : ""}
       <p>${p.links.map(([label, url]) => `<a href="${url}" target="_blank" rel="noopener">${label}</a>`).join(" · ")}</p>
-      <label class="f" for="pe">Fake email or label for this method</label><input id="pe" type="text" placeholder="name@example.com" autocomplete="off">
+      ${p.id === "PayPal" || p.id === "Payoneer" ? `
+        <label class="f" for="pe">Fake email for this practice method</label><input id="pe" type="email" placeholder="name@example.com" autocomplete="off">
+      ` : p.id === "Mastercard or Visa card" ? `
+        <p class="payment-notice">Practice only. Never type your real card or bank details.</p>
+        <div class="payment-fields">
+          <div class="wide"><label class="f" for="cardholder">Cardholder name</label><input id="cardholder" type="text" autocomplete="off"></div>
+          <div class="wide"><label class="f" for="cardnumber">Card number</label><input id="cardnumber" type="text" inputmode="numeric" autocomplete="off" maxlength="19" aria-describedby="card-detected"><span class="brand-detection" id="card-detected"><img id="card-logo" alt="" hidden><span id="card-brand" aria-live="polite">Enter a sample card number</span></span></div>
+          <div><label class="f" for="cardexpiry">Expiry (MM/YY)</label><input id="cardexpiry" type="text" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="MM/YY"></div>
+          <div><label class="f" for="cardcvc">CVC</label><input id="cardcvc" type="text" inputmode="numeric" autocomplete="off" maxlength="3"></div>
+        </div>
+        <button type="button" class="gh" data-x="paysample">Fill with sample details</button>
+      ` : `
+        <p class="payment-notice">Practice only. Never type your real card or bank details.</p>
+        <div class="payment-fields">
+          <div><label class="f" for="bankname">Bank name</label><input id="bankname" type="text" autocomplete="off"></div>
+          <div><label class="f" for="accountholder">Account holder name</label><input id="accountholder" type="text" autocomplete="off"></div>
+          <div><label class="f" for="accountnumber">Account number</label><input id="accountnumber" type="text" inputmode="numeric" autocomplete="off" maxlength="10"></div>
+          <div><label class="f" for="swift">SWIFT/BIC code</label><input id="swift" type="text" autocomplete="off"></div>
+        </div>
+        <button type="button" class="gh" data-x="paysample">Fill with sample details</button>
+      `}
+      <p class="no hidden" id="pay-error" role="alert">For your safety, this practice site only accepts sample numbers.</p>
       <p><button class="pr" data-x="paylink" data-m="${p.id}">Link payment method</button></p></div>` : ""}`);
 }
 
-/* Fake support chat: simple keyword rules, no real AI and no real agent */
+/* Practice chat uses the existing keyword rules and never contacts a real agent. */
 function chatInit() {
   const c = document.createElement("div");
   c.id = "chat";
-  c.innerHTML = `<button class="pr chatbtn" data-x="chat">Support</button>
-    <div class="chatbox hidden" id="chatbox"><div class="chathead"><b>Support assistant</b><span class="mu"> practice bot</span></div>
-    <div class="chatlog" id="chatlog" aria-live="polite"></div>
+  c.innerHTML = `<button class="pr chatbtn" id="chat-launcher" data-x="chat" aria-label="${BOT_NAME} chat" aria-expanded="false">${BOT_NAME}<span class="chat-unread hidden" id="chat-unread" aria-label="Unread reply"></span></button>
+    <div class="chatbox hidden" id="chatbox"><div class="chathead"><span class="chat-avatar" aria-hidden="true">M</span><b class="chat-title">${BOT_NAME}</b><button class="chat-minimize" type="button" data-x="chatmin" aria-label="Minimize ${BOT_NAME} chat">−</button></div>
+    <p class="chat-notice">Practice chat. Replies are automatic. No real person is reading this.</p>
+    <div class="chatlog" id="chatlog" aria-live="polite" aria-relevant="additions text"></div>
     <div class="chatq">${["Phone code not arriving", "Document verification problem", "Payment method problem", "Is this job real?"].map((q) => `<button class="tab" data-x="chatq" data-q="${q}">${q}</button>`).join("")}</div>
-    <div class="chatin"><input id="chatin" type="text" placeholder="Type a message" autocomplete="off"><button class="pr" data-x="chatsend">Send</button></div></div>`;
+    <div class="chatin"><input id="chatin" type="text" placeholder="Type a message" aria-label="Message to ${BOT_NAME}" autocomplete="off"><button class="pr" data-x="chatsend">Send</button></div></div>`;
   document.body.appendChild(c);
   gid("chatin").addEventListener("keydown", (e) => { if (e.key === "Enter") chatSend(); });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !gid("chatbox").classList.contains("hidden")) chatMinimize();
+  });
 }
 const chatAdd = (who, text) => {
-  const log = gid("chatlog"), d = document.createElement("div");
-  d.className = "msg " + who; d.textContent = text; log.appendChild(d); log.scrollTop = log.scrollHeight;
+  const log = gid("chatlog"), row = document.createElement("div"), d = document.createElement("div");
+  row.className = who === "bot" ? "msg-row bot-row" : "msg-row";
+  if (who === "bot") {
+    const avatar = document.createElement("span");
+    avatar.className = "chat-avatar small"; avatar.setAttribute("aria-hidden", "true"); avatar.textContent = "M"; row.appendChild(avatar);
+  }
+  d.className = "msg " + who; d.textContent = text; row.appendChild(d); log.appendChild(row); log.scrollTop = log.scrollHeight;
+  if (who === "bot" && gid("chatbox").classList.contains("hidden")) gid("chat-unread").classList.remove("hidden");
 };
+function chatTyping() {
+  const row = document.createElement("div"), avatar = document.createElement("span"), bubble = document.createElement("div");
+  row.className = "msg-row";
+  avatar.className = "chat-avatar small"; avatar.setAttribute("aria-hidden", "true"); avatar.textContent = "M";
+  bubble.className = "msg bot";
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    bubble.innerHTML = '<span class="typing-label">typing...</span>';
+  } else {
+    bubble.innerHTML = '<span class="typing-label">Matanda is typing<span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span></span>';
+  }
+  row.append(avatar, bubble); gid("chatlog").appendChild(row); gid("chatlog").scrollTop = gid("chatlog").scrollHeight;
+  return row;
+}
 function chatSend(text) {
   const inp = gid("chatin"), t = (text || inp.value).trim();
   if (!t) return;
   inp.value = ""; chatAdd("me", t);
   const hit = BOT.find(([re]) => re.test(t));
-  setTimeout(() => chatAdd("bot", hit ? hit[1] : FALLBACK), 700);
+  const reply = hit ? hit[1] : FALLBACK;
+  const typing = chatTyping();
+  const delay = Math.min(1800, Math.max(800, 800 + reply.length * 2));
+  setTimeout(() => {
+    typing.remove();
+    chatAdd("bot", reply);
+  }, delay);
 }
 function chatToggle() {
-  const box = gid("chatbox"); box.classList.toggle("hidden");
-  if (!chatStarted) { chatStarted = true; chatAdd("bot", "Before we begin, please tell us anything that could help us get started. The more detail you give, the better we can help. (Practice bot: no real agent will reply.)"); }
+  const box = gid("chatbox"), open = box.classList.contains("hidden");
+  box.classList.toggle("hidden", !open);
+  gid("chat-launcher").setAttribute("aria-expanded", String(open));
+  if (open) {
+    gid("chat-unread").classList.add("hidden");
+    if (!chatStarted) {
+      chatStarted = true;
+      const typing = chatTyping();
+      setTimeout(() => {
+        typing.remove();
+        chatAdd("bot", "Hello! This is the Matanda practice assistant. Tell me what is not working, for example the phone code, your document check or a payment method. Replies are automatic.");
+      }, 1000);
+    }
+  }
 }
+function chatMinimize() {
+  gid("chatbox").classList.add("hidden");
+  gid("chat-launcher").setAttribute("aria-expanded", "false");
+  gid("chat-launcher").focus();
+}
+
+document.addEventListener("input", (event) => {
+  if (event.target.id === "cardnumber") {
+    const input = event.target, digits = input.value.replace(/\D/g, "").slice(0, 16);
+    input.value = digits.replace(/(\d{4})(?=\d)/g, "$1 ");
+    const brand = digits.startsWith("4") ? "Visa" : /^5[1-5]/.test(digits) ? "Mastercard" : "";
+    const logo = gid("card-logo");
+    logo.hidden = !brand;
+    if (brand) {
+      logo.src = `assets/payments/${brand.toLowerCase()}.svg`;
+      logo.alt = `${brand} logo`;
+    }
+    gid("card-brand").textContent = brand || (digits ? "Unrecognized card brand" : "Enter a sample card number");
+  } else if (event.target.id === "cardexpiry") {
+    const input = event.target, digits = input.value.replace(/\D/g, "").slice(0, 4);
+    input.value = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+  }
+});
+
+app.addEventListener("change", (event) => {
+  if (event.target.id !== "fl") return;
+  const input = event.target, file = input.files && input.files[0];
+  const side = idState && idState.s === 3 ? "front" : "back";
+  const status = gid("id-status"), next = gid("id-continue");
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    status.textContent = "Choose an image file only.";
+    status.className = "no";
+    input.value = "";
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    status.textContent = "That image is larger than 5 MB. Choose a smaller image.";
+    status.className = "no";
+    input.value = "";
+    return;
+  }
+  idState[side] = "Image selected";
+  status.textContent = "Image selected";
+  status.className = "mu";
+  next.classList.remove("hidden");
+  input.value = "";
+});
 
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-x]");
@@ -1105,17 +1224,47 @@ document.addEventListener("click", (e) => {
       if (idState === s && s.s === 5) { s.s = 6; idView(); toast("Notification: your document was approved. You can start working."); }
     }, 6000);
   } else if (x === "idsample") { s[s.s === 3 ? "front" : "back"] = "Sample document selected"; idView(); }
-  else if (x === "idfile") {
-    if (!gid("fl").files[0]) return alert("Choose an image first.");
-    s[s.s === 3 ? "front" : "back"] = "Image selected"; idView();
-  } else if (x === "idfin") { acct.id = true; setup(); }
+  else if (x === "idfin") { acct.id = true; setup(); }
   else if (x === "paygo") payView();
   else if (x === "paypick") payView(b.dataset.m);
+  else if (x === "paysample") {
+    if (gid("cardholder")) {
+      gid("cardholder").value = "Practice Student";
+      gid("cardnumber").value = "4242 4242 4242 4242";
+      gid("cardnumber").dispatchEvent(new Event("input", { bubbles: true }));
+      const expiry = new Date(); expiry.setFullYear(expiry.getFullYear() + 1);
+      gid("cardexpiry").value = `${String(expiry.getMonth() + 1).padStart(2, "0")}/${String(expiry.getFullYear()).slice(-2)}`;
+      gid("cardcvc").value = "123";
+    } else {
+      gid("bankname").value = "Practice Bank";
+      gid("accountholder").value = "Practice Student";
+      gid("accountnumber").value = "0123456789";
+      gid("swift").value = "DEMOUGKA";
+    }
+    const error = gid("pay-error"); if (error) error.classList.add("hidden");
+  }
   else if (x === "paylink") {
-    if (gid("pe").value.trim().length < 3) return alert("Type a fake email or label.");
+    if (b.dataset.m === "PayPal" || b.dataset.m === "Payoneer") {
+      if (gid("pe").value.trim().length < 3) return alert("Type a fake email.");
+    } else if (b.dataset.m === "Mastercard or Visa card") {
+      const card = gid("cardnumber").value.replace(/\D/g, "");
+      const expiry = gid("cardexpiry").value.trim().match(/^(0[1-9]|1[0-2])\/(\d{2})$/);
+      let futureExpiry = false;
+      if (expiry) {
+        const year = 2000 + Number(expiry[2]), month = Number(expiry[1]);
+        const now = new Date();
+        futureExpiry = year > now.getFullYear() || (year === now.getFullYear() && month >= now.getMonth() + 1);
+      }
+      const valid = gid("cardholder").value.trim() && ["4242424242424242", "5555555555554444"].includes(card) && futureExpiry && gid("cardcvc").value === "123";
+      if (!valid) { gid("pay-error").classList.remove("hidden"); return; }
+    } else if (b.dataset.m === "Bank account") {
+      const valid = gid("bankname").value.trim() && gid("accountholder").value.trim() && gid("accountnumber").value === "0123456789" && gid("swift").value.trim();
+      if (!valid) { gid("pay-error").classList.remove("hidden"); return; }
+    }
     acct.pay = b.dataset.m; toast("Payment method linked (practice)."); setup();
   } else if (x === "jobgo") openJob(pendingJob);
   else if (x === "chat") chatToggle();
+  else if (x === "chatmin") chatMinimize();
   else if (x === "chatq") chatSend(b.dataset.q);
   else if (x === "chatsend") chatSend();
 });
