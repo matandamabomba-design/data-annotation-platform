@@ -24,6 +24,21 @@ const JOBS = [
     short: "Mark each review as positive, negative or neutral. The client sends the full guidelines to the freelancer they choose.",
     detail: "The client needs 150 short customer reviews labelled within one week. They want someone careful who follows a short rule sheet and flags unclear reviews instead of guessing. Any tool is fine: Labelbox, CVAT or a spreadsheet.",
     ok: "The pay is realistic, the task is described, and the client asks for care, not a fee.",
+    qualification: {
+      pass: 4,
+      items: [
+        { q: "The trainer arrived at 8:30 and the session started at 9:00.", a: "Neutral", why: "Times only. No feeling." },
+        { q: "Thanks for nothing. The shop closed the day I arrived.", a: "Negative", why: "Sarcasm. Label the meaning, which is anger." },
+        { q: "I love how easy the new dashboard is to use.", a: "Positive", why: "Direct praise." },
+        { q: "The screen is bright, but the sound is very weak.", a: "Neutral", why: "One good and one bad point of equal weight." },
+        { q: "Nobody should buy this laptop. It overheats within minutes.", a: "Negative", why: "A warning against the product." },
+      ],
+    },
+    workItems: [
+      { q: "The delivery arrived early and everything was packed carefully.", a: "Positive", why: "The customer is pleased with the early, careful delivery." },
+      { q: "I waited two weeks and nobody replied to my support request.", a: "Negative", why: "The customer is frustrated about the delay and lack of response." },
+      { q: "The order contains three notebooks and a blue pen.", a: "Neutral", why: "This is a factual description without an opinion." },
+    ],
   },
   {
     id: "j2",
@@ -131,6 +146,7 @@ let filter = "all";
 let send = null;
 let rows = [];
 let summary = "";
+const proposalProgress = {};
 
 const find = (id) => JOBS.find((job) => job.id === id);
 const kind = { bid: "Bidding", qual: "Qualification", pool: "Task pool" };
@@ -230,8 +246,9 @@ function board() {
             <div class="side">
               <div class="pay">${esc(job.pay)}</div>
               ${job.type === "qual" ? '<span class="step">1 step to qualify</span>' : ""}
+              ${job.type === "bid" && proposalProgress[job.id] && proposalProgress[job.id].accepted ? '<span class="step">Proposal accepted</span>' : ""}
               <button class="${job.type === "pool" ? "pr" : "gh"}" data-act="open" data-id="${job.id}">
-                ${job.type === "bid" ? "View and bid" : job.type === "qual" ? "View details" : "Start"}
+                ${job.type === "bid" ? proposalProgress[job.id] && proposalProgress[job.id].accepted ? "View accepted offer" : "View and bid" : job.type === "qual" ? "View details" : "Start"}
               </button>
             </div>
           </div>
@@ -246,11 +263,12 @@ function openJob(id) {
   if (!job) return board();
 
   if (job.type === "bid") {
+    if (proposalProgress[id] && proposalProgress[id].accepted) return offerJob(job);
     draw(`
       <button class="gh" data-act="back">Back to jobs</button>
       <h1>${esc(job.title)}</h1>
       <p class="mu">Client: ${esc(job.client)}. ${esc(job.pay)}. ${esc(job.seats)}.</p>
-      <div class="panel"><p>${esc(job.detail)}</p></div>
+      <div class="panel"><h2>Project preview</h2><p>${esc(job.short)}</p><p class="mu">The full brief and project guidelines are shared after a client accepts your proposal.</p></div>
       <label class="f" for="tool">Tool you will use</label>
       <select id="tool">
         <option>Labelbox</option>
@@ -268,7 +286,42 @@ function openJob(id) {
     return;
   }
 
-  rows = job.items.map((item) => {
+  openAssessment(job);
+}
+
+function offerJob(job) {
+  const progress = proposalProgress[job.id];
+  draw(`
+    <button class="gh" data-act="back">Back to jobs</button>
+    <h1>Client accepted your proposal</h1>
+    <p class="mu">Simulated offer · no real client or email is involved.</p>
+    <div class="panel">
+      <h2>In-app notification</h2>
+      <p><b>From:</b> ${esc(job.client)}</p>
+      <p><b>Subject:</b> Your proposal was accepted: ${esc(job.title)}</p>
+      <p>Hello ${esc(name)}, your proposal was accepted. ${progress.qualified ? "Your qualification is complete. The full project brief is now available." : "Complete the qualification test to unlock the full project brief."}</p>
+      <p class="mu">Email preview only — nothing was sent to an email address.</p>
+    </div>
+    ${
+      progress.qualified
+        ? `<div class="panel">
+            <h2>Full job description</h2>
+            <p>${esc(job.detail)}</p>
+            <h2>Labeling guidelines</h2>
+            <ul>${GUIDE.map((rule) => `<li>${rule}</li>`).join("")}</ul>
+            <p><b>Deliverable:</b> Label 150 customer reviews as Positive, Negative or Neutral within one week. Flag unclear reviews instead of guessing.</p>
+            <p><b>Tool:</b> ${esc(progress.tool)} · <b>Rate:</b> ${esc(job.pay)}</p>
+            <p class="ok">Qualification passed. Your practice batch is unlocked.</p>
+            <button class="pr" data-act="work" data-id="${job.id}">Start practice batch</button>
+          </div>`
+        : `<div class="panel"><h2>Next step: qualification</h2><p>Pass a short test on sentiment labels to unlock the complete job description and project guidelines.</p><p>Practice rules: label what is written, interpret sarcasm by its meaning, and do not guess.</p></div><p><button class="pr" data-act="qualify" data-id="${job.id}">Take qualification test</button></p>`
+    }
+  `);
+}
+
+function openAssessment(job) {
+  const assessment = job.qualification || job;
+  rows = assessment.items.map((item) => {
     if (item.a) {
       return {
         q: item.q,
@@ -297,8 +350,8 @@ function openJob(id) {
     <h1>${esc(job.title)}</h1>
     <p class="mu">${esc(job.pay)}. ${esc(job.seats)}.</p>
     ${
-      job.type === "qual"
-        ? `<div class="panel"><h2>Project rules</h2><ul>${GUIDE.map((rule) => `<li>${rule}</li>`).join("")}</ul><p class="mu">Pass mark: ${job.pass} out of ${job.items.length}.</p><p>Not ready? <a href="practice.html" target="_blank" rel="noopener">Practise with timed drills first</a>.</p></div>`
+    job.qualification || job.type === "qual"
+      ? `<div class="panel"><h2>Project rules</h2><ul>${GUIDE.map((rule) => `<li>${rule}</li>`).join("")}</ul><p class="mu">Pass mark: ${assessment.pass} out of ${assessment.items.length}.</p><p>Not ready? <a href="practice.html" target="_blank" rel="noopener">Practise with timed drills first</a>.</p></div>`
         : "<p>Choose the better answer for each question.</p>"
     }
     ${rows
@@ -320,11 +373,11 @@ function openJob(id) {
         `
       )
       .join("")}
-    <p><button class="pr" data-act="quiz" data-id="${job.id}">Submit answers</button></p>
+    <p><button class="pr" data-act="quiz" data-id="${job.id}" ${job.qualification ? 'data-qualification="true"' : ""}>Submit answers</button></p>
   `);
 }
 
-async function quiz(id) {
+async function quiz(id, qualification = false) {
   const job = find(id);
   if (!job) return board();
 
@@ -339,12 +392,13 @@ async function quiz(id) {
 
   const score = got.filter((answer, index) => answer === rows[index].c).length;
   const total = rows.length;
-  const passed = job.type === "qual" ? score >= job.pass : null;
+  const isQualification = qualification || job.type === "qual";
+  const passed = isQualification ? score >= (job.qualification || job).pass : null;
 
   const result = await save({
     jobId: job.id,
     jobTitle: job.title,
-    type: job.type === "qual" ? "qualification" : "task_pool",
+    type: isQualification ? "qualification" : "task_pool",
     score,
     total,
     passed,
@@ -353,14 +407,20 @@ async function quiz(id) {
 
   summary = `Name: ${name}\nJob: ${job.title}\nScore: ${score}/${total}` + (passed === null ? "" : `\nQualified: ${passed ? "yes" : "no"}`);
 
+  if (isQualification && job.qualification && passed) {
+    proposalProgress[job.id].qualified = true;
+  }
+
+  const qualifiedForJob = isQualification && job.qualification;
   draw(`
     <h1>${score} out of ${total}</h1>
     <div class="panel">
-      <p><b>${passed === null ? "Round complete." : passed ? "You qualified. On a real platform, paid tasks would unlock now." : "Not qualified this time. Read the rules again and try once more."}</b></p>
+      <p><b>${passed === null ? "Round complete." : passed ? qualifiedForJob ? "Qualification passed. The full job description is unlocked." : "You qualified. On a real platform, paid tasks would unlock now." : "Not qualified this time. Read the rules again and try once more."}</b></p>
       <p class="mu">${statusText(result)}</p>
       <p>
         <button class="gh" data-act="copy">Copy my results</button>
-        ${passed === false ? `<button class="gh" data-act="open" data-id="${job.id}">Try again</button>` : ""}
+        ${passed === false ? `<button class="gh" data-act="${job.qualification ? "qualify" : "open"}" data-id="${job.id}">Try again</button>` : ""}
+        ${qualifiedForJob && passed ? `<button class="pr" data-act="offer" data-id="${job.id}">View full job description</button>` : ""}
         <button class="pr" data-act="back">Back to jobs</button>
       </p>
     </div>
@@ -380,6 +440,64 @@ async function quiz(id) {
         `
       )
       .join("")}
+  `);
+}
+
+function openWork(id) {
+  const job = find(id);
+  if (!job || !proposalProgress[id] || !proposalProgress[id].qualified) return board();
+
+  draw(`
+    <button class="gh" data-act="open" data-id="${id}">Back to job brief</button>
+    <h1>Practice labeling batch</h1>
+    <p class="mu">${esc(job.title)} · Sample task · No paid work is being assigned.</p>
+    <div class="panel"><p>Label each review using the project guidelines. Use only what is written; do not guess.</p></div>
+    ${job.workItems
+      .map((item, index) => `
+        <fieldset>
+          <legend>${index + 1}. ${esc(item.q)}</legend>
+          ${LABELS.map((label) => `<label class="o"><input type="radio" name="work${index}" value="${esc(label)}"> ${esc(label)}</label>`).join("")}
+        </fieldset>
+      `)
+      .join("")}
+    <p><button class="pr" data-act="submit-work" data-id="${id}">Submit practice batch</button></p>
+  `);
+}
+
+async function submitWork(id) {
+  const job = find(id);
+  if (!job || !proposalProgress[id] || !proposalProgress[id].qualified) return board();
+
+  const answers = job.workItems.map((_, index) => {
+    const checked = document.querySelector(`input[name=work${index}]:checked`);
+    return checked ? checked.value : "";
+  });
+  if (answers.includes("") && !confirm("Some labels are missing. Submit anyway?")) return;
+
+  const score = answers.filter((answer, index) => answer === job.workItems[index].a).length;
+  const result = await save({
+    jobId: job.id,
+    jobTitle: job.title,
+    type: "practice_batch",
+    score,
+    total: job.workItems.length,
+    answers,
+  });
+  summary = `Name: ${name}\nJob: ${job.title}\nPractice batch: ${score}/${job.workItems.length}`;
+
+  draw(`
+    <h1>Practice batch submitted</h1>
+    <div class="panel"><p><b>${score} out of ${job.workItems.length} labels correct.</b></p>
+      <p class="mu">${statusText(result)}</p>
+      <button class="gh" data-act="copy">Copy my results</button>
+      <button class="pr" data-act="open" data-id="${id}">Review the job brief</button>
+    </div>
+    ${job.workItems.map((item, index) => `
+      <div class="panel"><p><b>${index + 1}. ${esc(item.q)}</b></p>
+        <p>Your label: <span class="${answers[index] === item.a ? "ok" : "no"}">${answers[index] ? esc(answers[index]) : "Not answered"}</span></p>
+        <p>Best label: <b>${esc(item.a)}</b>. ${esc(item.why)}</p>
+      </div>
+    `).join("")}
   `);
 }
 
@@ -416,12 +534,23 @@ async function bid(id) {
     words: text.split(/\s+/).length,
   });
 
+  if (job.scam) {
+    proposalProgress[job.id] = { accepted: false, tool, qualified: false };
+  } else {
+    proposalProgress[job.id] = { accepted: true, tool, qualified: false };
+  }
+
   summary = `Name: ${name}\nJob: ${job.title}\nTool: ${tool}\nProposal: ${text}`;
 
   draw(`
     <h1>Proposal sent</h1>
     <div class="panel">
       <p class="mu">${statusText(result)}</p>
+      ${
+        job.scam
+          ? "<p><b>The simulated client did not accept this proposal.</b> Review the warning signs before deciding what to do next.</p>"
+          : `<div class="panel"><h2>New in-app notification</h2><p><b>${esc(job.client)}</b> accepted your proposal for <b>${esc(job.title)}</b>.</p><p class="mu">Email notification preview only — nothing was sent.</p></div><p>This practice scenario advances you to the next stage so you can explore the workflow.</p>`
+      }
       ${job.scam ? `<p class="no">Warning: this job was a scam. Real clients do not ask for fees or bank details.</p><ul>${job.flags.map((flag) => `<li>${esc(flag)}</li>`).join("")}</ul>` : ""}
       <h2>Quick check</h2>
       <p class="mu">A simple check, not a grade. A real client reads for specifics.</p>
@@ -433,7 +562,11 @@ async function bid(id) {
           )
           .join("")}
       </ul>
-      <p><button class="gh" data-act="copy">Copy my proposal</button> <button class="pr" data-act="back">Back to jobs</button></p>
+      <p>
+        <button class="gh" data-act="copy">Copy my proposal</button>
+        ${job.scam ? "" : `<button class="pr" data-act="offer" data-id="${job.id}">Open accepted offer</button>`}
+        <button class="gh" data-act="back">Back to jobs</button>
+      </p>
     </div>
   `);
 }
@@ -667,6 +800,7 @@ app.addEventListener("click", (event) => {
   if (action === "rename") {
     name = "";
     acct.phone = false; acct.id = false; acct.pay = "";
+    Object.keys(proposalProgress).forEach((jobId) => delete proposalProgress[jobId]);
     gate();
     return;
   }
@@ -698,7 +832,30 @@ app.addEventListener("click", (event) => {
   }
 
   if (action === "quiz") {
-    quiz(id);
+    quiz(id, button.dataset.qualification === "true");
+    return;
+  }
+
+  if (action === "offer") {
+    const job = find(id);
+    if (job && proposalProgress[id] && proposalProgress[id].accepted) offerJob(job);
+    return;
+  }
+
+  if (action === "qualify") {
+    const job = find(id);
+    if (!job || !job.qualification || !proposalProgress[id] || !proposalProgress[id].accepted) return board();
+    openAssessment(job);
+    return;
+  }
+
+  if (action === "work") {
+    openWork(id);
+    return;
+  }
+
+  if (action === "submit-work") {
+    submitWork(id);
     return;
   }
 
