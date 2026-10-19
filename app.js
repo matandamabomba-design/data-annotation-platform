@@ -549,6 +549,15 @@ function projectBrief(job, progress) {
 function openWork(id) {
   const job = find(id);
   if (!job || !proposalProgress[id] || !proposalProgress[id].qualified) return board();
+  const submission = proposalProgress[id].submission;
+
+  if (submission && submission.qa && submission.qa.accepted) {
+    return showPaymentRecord(job, proposalProgress[id]);
+  }
+
+  if (submission && !submission.qa) {
+    return showSubmissionReceipt(job, proposalProgress[id]);
+  }
 
   draw(`
     <button class="gh" data-act="offer" data-id="${id}">Back to project handoff</button>
@@ -568,8 +577,120 @@ function openWork(id) {
       <h2>Submit your CSV export</h2>
       <label class="f" for="export-file">Completed CSV file</label>
       <input id="export-file" type="file" accept=".csv,text/csv">
-      <p id="submission-status" class="mu" role="status" aria-live="polite">Required headers: task_id, review_text, label. All ${job.workItems.length} task IDs must be included once.</p>
-      <p><button class="pr" data-act="submit-export" data-id="${id}">Submit completed CSV</button></p>
+      <p id="submission-status" class="mu" role="status" aria-live="polite">Required headers: task_id, review_text, label. All ${job.workItems.length} task IDs must be included once. This will begin a simulated client review; feedback is shown after QA.</p>
+      <p><button class="pr" data-act="submit-export" data-id="${id}">${submission ? "Submit revised CSV" : "Submit completed CSV"}</button></p>
+    </div>
+  `);
+}
+
+function showSubmissionReceipt(job, progress) {
+  const submission = progress.submission;
+  draw(`
+    <h1>Submission received</h1>
+    <p class="mu">Practice submission · no real client received this file.</p>
+    <div class="panel">
+      <p><b>Project:</b> ${esc(job.title)}</p>
+      <p><b>Submission:</b> ${submission.attempt} ${submission.attempt === 1 ? "st" : submission.attempt === 2 ? "nd" : submission.attempt === 3 ? "rd" : "th"} attempt</p>
+      <p><b>Received:</b> ${esc(formatDeadline(submission.submittedAt))} (EAT / UTC+3)</p>
+      <p><b>Status:</b> Awaiting quality review</p>
+      <p class="mu">${statusText(submission.saveResult)} The training answer key is hidden until the simulated QA review.</p>
+      <button class="pr" data-act="review-qa" data-id="${job.id}">Continue to quality review</button>
+      <button class="gh" data-act="offer" data-id="${job.id}">Review project brief</button>
+    </div>
+  `);
+}
+
+async function reviewSubmission(id) {
+  const job = find(id);
+  const progress = proposalProgress[id];
+  const submission = progress && progress.submission;
+  if (!job || !submission || submission.qa) {
+    if (job && submission && submission.qa && submission.qa.accepted) showPaymentRecord(job, progress);
+    else if (job && submission) showQaResult(job, progress);
+    else board();
+    return;
+  }
+
+  const accepted = submission.score >= Math.ceil(job.workItems.length * 0.8);
+  const reviewedAt = new Date();
+  const result = await save({
+    jobId: job.id,
+    jobTitle: job.title,
+    type: "practice_qa",
+    attempt: submission.attempt,
+    score: submission.score,
+    total: job.workItems.length,
+    accepted,
+  });
+  submission.qa = { accepted, reviewedAt, saveResult: result };
+
+  if (accepted) {
+    const paymentResult = await save({
+      jobId: job.id,
+      jobTitle: job.title,
+      type: "practice_payment",
+      status: "approved_for_simulated_payout",
+      amount: null,
+      currency: null,
+      reason: "The sample batch has no billable hours or configured piece rate.",
+    });
+    submission.payment = { status: "approved", saveResult: paymentResult };
+  }
+
+  showQaResult(job, progress);
+}
+
+function showQaResult(job, progress) {
+  const submission = progress.submission;
+  const { accepted, reviewedAt, saveResult } = submission.qa;
+  draw(`
+    <h1>${accepted ? "Work accepted" : "Corrections requested"}</h1>
+    <p class="mu">Simulated quality review · attempt ${submission.attempt} · ${esc(formatDeadline(reviewedAt))} EAT / UTC+3</p>
+    <div class="panel">
+      <p><b>Quality score:</b> ${submission.score} out of ${job.workItems.length} (${Math.round((submission.score / job.workItems.length) * 100)}%)</p>
+      <p><b>Decision:</b> ${accepted ? "Accepted — the practice batch meets the 80% accuracy threshold." : "Revision requested — correct the flagged labels and submit an updated CSV."}</p>
+      <p class="mu">${statusText(saveResult)} This decision and answer key are simulated for training.</p>
+      ${
+        accepted
+          ? `<p>In a real workflow, accepted work becomes eligible for payment under the project’s agreed rate and payout schedule. Continue to the practice payment record to see what is and is not calculated here.</p>
+            <button class="pr" data-act="payment" data-id="${job.id}">View payment record</button>`
+          : `<p>Quality feedback is shown below. A real client may specify whether corrections are allowed and how quickly they are due.</p>
+            <button class="pr" data-act="work" data-id="${job.id}">Upload corrected CSV</button>`
+      }
+    </div>
+    ${submission.feedback.map((item, index) => `
+      <div class="panel"><p><b>${index + 1}. ${esc(item.id)} — ${esc(item.text)}</b></p>
+        <p>Your label: <span class="${item.submitted === item.correct ? "ok" : "no"}">${esc(item.submitted)}</span></p>
+        <p>Reference label: <b>${esc(item.correct)}</b>. ${esc(item.why)}</p>
+      </div>
+    `).join("")}
+  `);
+}
+
+function showPaymentRecord(job, progress) {
+  const submission = progress.submission;
+  const payment = submission.payment;
+  draw(`
+    <h1>Payment record</h1>
+    <p class="mu">Simulated payment stage · no money is transferred.</p>
+    <div class="panel">
+      <h2>Earnings approval</h2>
+      <p><b>Project:</b> ${esc(job.title)}</p>
+      <p><b>Quality status:</b> Accepted (${submission.score}/${job.workItems.length})</p>
+      <p><b>Payment status:</b> Approved for payout simulation</p>
+      <p><b>Amount:</b> Not calculated — this sample has no billable hours or configured per-task rate.</p>
+      <p><b>Rate in listing:</b> ${esc(job.pay)} (illustrative; the sample is unpaid)</p>
+      <p class="mu">${statusText(payment.saveResult)}</p>
+    </div>
+    <div class="panel">
+      <h2>What happens on a real platform?</h2>
+      <ol>
+        <li>The platform records approved earnings against the agreed rate or accepted task count.</li>
+        <li>Funds are released according to the contract and the platform’s payout schedule.</li>
+        <li>The worker checks the available balance, fees and payout method, then requests withdrawal if required.</li>
+      </ol>
+      <p class="no">This demo does not hold funds, connect to a payment provider, or send a payout.</p>
+      <button class="gh" data-act="offer" data-id="${job.id}">Back to project brief</button>
     </div>
   `);
 }
@@ -703,22 +824,19 @@ async function submitExport(id) {
     total: job.workItems.length,
     answers: feedback.map((item) => item.submitted),
   });
-  summary = `Name: ${name}\nJob: ${job.title}\nPractice batch: ${score}/${job.workItems.length}`;
-
-  draw(`
-    <h1>CSV export submitted</h1>
-    <div class="panel"><p><b>${score} out of ${job.workItems.length} labels correct.</b></p>
-      <p class="mu">${statusText(result)}</p>
-      <button class="gh" data-act="copy">Copy my results</button>
-      <button class="pr" data-act="offer" data-id="${id}">Review the job brief</button>
-    </div>
-    ${feedback.map((item, index) => `
-      <div class="panel"><p><b>${index + 1}. ${esc(item.id)} — ${esc(item.text)}</b></p>
-        <p>Your label: <span class="${item.submitted === item.correct ? "ok" : "no"}">${esc(item.submitted)}</span></p>
-        <p>Best label: <b>${esc(item.correct)}</b>. ${esc(item.why)}</p>
-      </div>
-    `).join("")}
-  `);
+  const progress = proposalProgress[id];
+  const attempt = progress.submission ? progress.submission.attempt + 1 : 1;
+  progress.submission = {
+    score,
+    feedback,
+    saveResult: result,
+    attempt,
+    submittedAt: new Date(),
+    qa: null,
+    payment: null,
+  };
+  summary = `Name: ${name}\nJob: ${job.title}\nSubmission received: attempt ${attempt}\nStatus: awaiting simulated quality review`;
+  showSubmissionReceipt(job, progress);
 }
 
 const checks = (text) => {
@@ -1074,6 +1192,20 @@ app.addEventListener("click", (event) => {
 
   if (action === "work") {
     openWork(id);
+    return;
+  }
+
+  if (action === "review-qa") {
+    reviewSubmission(id);
+    return;
+  }
+
+  if (action === "payment") {
+    const job = find(id);
+    const progress = proposalProgress[id];
+    if (job && progress && progress.submission && progress.submission.qa && progress.submission.qa.accepted && progress.submission.payment) {
+      showPaymentRecord(job, progress);
+    }
     return;
   }
 
