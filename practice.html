@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Annotation Practice Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+
+<section id="intro">
+  <p><a href="index.html">Back to the job hub</a></p>
+  <p class="muted">Practice room for beginners</p>
+  <h1>Data annotation practice</h1>
+  <p>Label short texts the way a real project would ask. Read the rules first, then work alone for the full time. Compare with your group afterwards.</p>
+
+  <div class="panel">
+    <h2>Project rules</h2>
+    <p>Choose the feeling of the writer about the topic.</p>
+    <ul class="guide">
+      <li><mark class="k pos">Positive</mark> The writer is happy, satisfied or praising.</li>
+      <li><mark class="k neg">Negative</mark> The writer is unhappy, frustrated or criticising.</li>
+      <li><mark class="k neu">Neutral</mark> Facts with no feeling, or good and bad points that are equally strong.</li>
+      <li>Sarcasm: label what the writer means, not the words on the screen.</li>
+      <li>All texts are in English.</li>
+      <li>Use only what is written. Do not guess the writer’s situation.</li>
+    </ul>
+  </div>
+
+  <div class="panel">
+    <label for="name">Your full name</label>
+    <input id="name" type="text" autocomplete="off" placeholder="Write your name exactly as in class">
+    <p class="muted" id="meta"></p>
+    <p><button class="primary" id="start" disabled>Start the tasks</button></p>
+  </div>
+</section>
+
+<section id="work" class="hidden" aria-live="polite">
+  <div class="top"><span id="count"></span><span class="timer" id="timer"></span></div>
+  <div class="bar"><i id="fill"></i></div>
+  <div class="sentbox"><span class="sent" id="sent"></span></div>
+  <div class="opts" id="opts" role="group" aria-label="Choose a label"></div>
+  <p class="muted">Keys: 1, 2, 3 to label. Left and right arrows to move.</p>
+  <div class="nav">
+    <button class="ghost" id="back">Back</button>
+    <span>
+      <button class="ghost" id="next">Next task</button>
+      <button class="primary hidden" id="finish">Finish and score</button>
+    </span>
+  </div>
+</section>
+
+<section id="done" class="hidden">
+  <h1>Your result</h1>
+  <div class="panel">
+    <div class="score" id="score"></div>
+    <p id="verdict"></p>
+    <p class="muted" id="sendmsg"></p>
+    <p>
+      <button class="ghost" id="copy">Copy my results</button>
+      <button class="primary" id="again">Practice again</button>
+    </p>
+  </div>
+  <h2>Review with your group</h2>
+  <p class="muted">Where you and a teammate chose differently, read the rules together and decide which label fits. That discussion is the practice.</p>
+  <div class="panel" id="review"></div>
+</section>
+<script src="pda.js" type="module"></script>
+</main>
+</body>
+</html>
