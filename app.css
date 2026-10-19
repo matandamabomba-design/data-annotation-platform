@@ -164,6 +164,7 @@ select:focus-visible {
 }
 
 input[type="text"],
+input[type="file"],
 textarea,
 select {
   width: 100%;
@@ -173,6 +174,13 @@ select {
   border-radius: 8px;
   background: var(--sf);
   color: var(--ink);
+}
+
+code {
+  padding: 0.05em 0.3em;
+  border-radius: 4px;
+  background: var(--bg);
+  overflow-wrap: anywhere;
 }
 
 textarea {

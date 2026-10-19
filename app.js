@@ -22,7 +22,7 @@ const JOBS = [
     seats: "2 seats",
     cap: "5 - 10 h/week",
     short: "Mark each review as positive, negative or neutral. The client sends the full guidelines to the freelancer they choose.",
-    detail: "The client needs 150 short customer reviews labelled within one week. They want someone careful who follows a short rule sheet and flags unclear reviews instead of guessing. Any tool is fine: Labelbox, CVAT or a spreadsheet.",
+    detail: "The client needs 150 short customer reviews labelled within one week. They want someone careful who follows a short rule sheet and flags unclear reviews instead of guessing. For this practice project, work in a spreadsheet or annotation tool that can export a CSV with task_id, review_text and label columns.",
     ok: "The pay is realistic, the task is described, and the client asks for care, not a fee.",
     qualification: {
       pass: 4,
@@ -35,9 +35,16 @@ const JOBS = [
       ],
     },
     workItems: [
-      { q: "The delivery arrived early and everything was packed carefully.", a: "Positive", why: "The customer is pleased with the early, careful delivery." },
-      { q: "I waited two weeks and nobody replied to my support request.", a: "Negative", why: "The customer is frustrated about the delay and lack of response." },
-      { q: "The order contains three notebooks and a blue pen.", a: "Neutral", why: "This is a factual description without an opinion." },
+      { id: "REV-001", q: "The delivery arrived early and everything was packed carefully.", a: "Positive", why: "The customer is pleased with the early, careful delivery." },
+      { id: "REV-002", q: "I waited two weeks and nobody replied to my support request.", a: "Negative", why: "The customer is frustrated about the delay and lack of response." },
+      { id: "REV-003", q: "The order contains three notebooks and a blue pen.", a: "Neutral", why: "This is a factual description without an opinion." },
+      { id: "REV-004", q: "The jacket looks great, but the zip broke on the first day.", a: "Negative", why: "The explicit complaint about the zip outweighs the brief positive comment." },
+      { id: "REV-005", q: "Perfect, another password reset that does not work.", a: "Negative", why: "The sarcasm expresses frustration with the reset." },
+      { id: "REV-006", q: "My parcel was left at the front desk at noon.", a: "Neutral", why: "This reports what happened without evaluating it." },
+      { id: "REV-007", q: "The support agent listened and fixed my account in minutes.", a: "Positive", why: "The customer praises the helpful and quick support." },
+      { id: "REV-008", q: "The bottle holds 750 ml and has a screw-top lid.", a: "Neutral", why: "This is a factual product description." },
+      { id: "REV-009", q: "I would happily order from this shop again.", a: "Positive", why: "The customer clearly expresses satisfaction and intent to return." },
+      { id: "REV-010", q: "The headphones arrived with one side completely silent.", a: "Negative", why: "The customer describes a product fault." },
     ],
   },
   {
@@ -307,12 +314,21 @@ function offerJob(job) {
         ? `<div class="panel">
             <h2>Full job description</h2>
             <p>${esc(job.detail)}</p>
+            <p><b>Issued:</b> ${esc(formatDate(progress.issuedAt))}</p>
+            <p><b>Deadline:</b> ${esc(formatDeadline(progress.deadline))} (Africa/Kampala, EAT / UTC+3)</p>
             <h2>Labeling guidelines</h2>
             <ul>${GUIDE.map((rule) => `<li>${rule}</li>`).join("")}</ul>
-            <p><b>Deliverable:</b> Label 150 customer reviews as Positive, Negative or Neutral within one week. Flag unclear reviews instead of guessing.</p>
-            <p><b>Tool:</b> ${esc(progress.tool)} · <b>Rate:</b> ${esc(job.pay)}</p>
+            <p><b>Full project deliverable:</b> 150 reviews labelled within one week. This practice pack contains a 10-review sample batch.</p>
+            <p><b>Practice export:</b> CSV with headers <code>task_id,review_text,label</code>. Keep each task ID and review text unchanged, and use only Positive, Negative or Neutral.</p>
+            <p><b>Where to submit:</b> Upload the completed CSV in this practice hub under “Submit your CSV export”. Real projects specify their own submission portal or workspace.</p>
+            <p><b>Tool:</b> ${esc(progress.tool)} · <b>Rate shown in listing:</b> ${esc(job.pay)} (illustrative only; no payment is offered)</p>
+            <p class="mu">Use the downloads below as your handoff pack. You can annotate the CSV in a spreadsheet or import it into a compatible tool, then export it back to this CSV format. Other platform-specific export formats are not accepted here.</p>
+            <p>
+              <button class="gh" data-act="download-brief" data-id="${job.id}">Download project brief</button>
+              <button class="gh" data-act="download-template" data-id="${job.id}">Download CSV template</button>
+            </p>
             <p class="ok">Qualification passed. Your practice batch is unlocked.</p>
-            <button class="pr" data-act="work" data-id="${job.id}">Start practice batch</button>
+            <button class="pr" data-act="work" data-id="${job.id}">Open sample batch and submission</button>
           </div>`
         : `<div class="panel"><h2>Next step: qualification</h2><p>Pass a short test on sentiment labels to unlock the complete job description and project guidelines.</p><p>Practice rules: label what is written, interpret sarcasm by its meaning, and do not guess.</p></div><p><button class="pr" data-act="qualify" data-id="${job.id}">Take qualification test</button></p>`
     }
@@ -443,59 +459,263 @@ async function quiz(id, qualification = false) {
   `);
 }
 
+function csvCell(value) {
+  return `"${String(value).replace(/"/g, '""')}"`;
+}
+
+function projectCsv(job) {
+  return [
+    ["task_id", "review_text", "label"],
+    ...job.workItems.map((item) => [item.id, item.q, ""]),
+  ]
+    .map((row) => row.map(csvCell).join(","))
+    .join("\r\n");
+}
+
+function downloadFile(filename, content, type) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const formatDate = (date) =>
+  new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "medium",
+    timeZone: "Africa/Kampala",
+  }).format(date);
+
+const formatDeadline = (date) =>
+  new Intl.DateTimeFormat("en-GB", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "Africa/Kampala",
+  }).format(date);
+
+function createDeadline(issuedAt) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: "Africa/Kampala",
+    })
+      .formatToParts(issuedAt)
+      .map(({ type, value }) => [type, value])
+  );
+  return new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) + 7, 14));
+}
+
+function projectBrief(job, progress) {
+  return [
+    "PRACTICE PROJECT BRIEF — SIMULATED WORK, NO PAYMENT",
+    "",
+    `Project: ${job.title}`,
+    `Client: ${job.client} (fictional practice client)`,
+    `Issued: ${formatDate(progress.issuedAt)} (Africa/Kampala)`,
+    `Deadline: ${formatDeadline(progress.deadline)} (Africa/Kampala, EAT / UTC+3)`,
+    "",
+    "JOB DESCRIPTION",
+    job.detail,
+    "",
+    "FULL PROJECT SCOPE",
+    "A real project would contain 150 reviews. This training pack contains a 10-review sample batch only.",
+    "",
+    "LABELING GUIDELINES",
+    "Positive — The writer is happy, satisfied or praising.",
+    "Negative — The writer is unhappy, frustrated or criticising.",
+    "Neutral — Facts with no feeling, or good and bad points of equal strength.",
+    "Interpret sarcasm by what the writer means. Use only the text; do not guess.",
+    "If a real project has an unclear item, follow its escalation instructions instead of guessing.",
+    "",
+    "TOOL AND WORKFLOW",
+    `Selected tool: ${progress.tool}. Use a spreadsheet or a compatible annotation tool that can import the template and export CSV. Each tool may have a different native export; this hub accepts the CSV schema below only.`,
+    "",
+    "DELIVERABLE AND EXPORT FORMAT",
+    "Submit one UTF-8 CSV file with these required column headers: task_id,review_text,label. Additional columns are allowed.",
+    "Keep task_id and review_text unchanged. Fill label with exactly one of: Positive, Negative, Neutral.",
+    "Include all 10 sample rows once each. Do not add a score or change the row IDs.",
+    "",
+    "SUBMISSION LOCATION",
+    "Upload the finished CSV in the practice hub using “Submit completed CSV”. No email is sent.",
+    "This simulated task is for practice only. It is not a real client assignment and has no payment.",
+  ].join("\n");
+}
+
 function openWork(id) {
   const job = find(id);
   if (!job || !proposalProgress[id] || !proposalProgress[id].qualified) return board();
 
   draw(`
-    <button class="gh" data-act="open" data-id="${id}">Back to job brief</button>
-    <h1>Practice labeling batch</h1>
-    <p class="mu">${esc(job.title)} · Sample task · No paid work is being assigned.</p>
-    <div class="panel"><p>Label each review using the project guidelines. Use only what is written; do not guess.</p></div>
-    ${job.workItems
-      .map((item, index) => `
-        <fieldset>
-          <legend>${index + 1}. ${esc(item.q)}</legend>
-          ${LABELS.map((label) => `<label class="o"><input type="radio" name="work${index}" value="${esc(label)}"> ${esc(label)}</label>`).join("")}
-        </fieldset>
-      `)
-      .join("")}
-    <p><button class="pr" data-act="submit-work" data-id="${id}">Submit practice batch</button></p>
+    <button class="gh" data-act="offer" data-id="${id}">Back to project handoff</button>
+    <h1>Sample batch: review sentiment</h1>
+    <p class="mu">${esc(job.title)} · ${job.workItems.length} sample records · practice only</p>
+    <div class="panel">
+      <h2>Before you start</h2>
+      <ol>
+        <li>Download the CSV template from the project handoff.</li>
+        <li>Label every row in your chosen compatible tool. Preserve the task IDs and review text.</li>
+        <li>Export as UTF-8 CSV with <code>task_id</code>, <code>review_text</code> and <code>label</code> columns.</li>
+        <li>Upload the completed CSV below. The hub checks its structure and gives practice feedback.</li>
+      </ol>
+      <p class="mu">Submission deadline: ${esc(formatDeadline(proposalProgress[id].deadline))} (EAT / UTC+3). This is a simulated deadline.</p>
+    </div>
+    <div class="panel">
+      <h2>Submit your CSV export</h2>
+      <label class="f" for="export-file">Completed CSV file</label>
+      <input id="export-file" type="file" accept=".csv,text/csv">
+      <p id="submission-status" class="mu" role="status" aria-live="polite">Required headers: task_id, review_text, label. All ${job.workItems.length} task IDs must be included once.</p>
+      <p><button class="pr" data-act="submit-export" data-id="${id}">Submit completed CSV</button></p>
+    </div>
   `);
 }
 
-async function submitWork(id) {
+function parseCsv(text) {
+  const records = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  let quoteClosed = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (quoted) {
+      if (char === '"' && text[index + 1] === '"') {
+        field += '"';
+        index += 1;
+      } else if (char === '"') {
+        quoted = false;
+        quoteClosed = true;
+      } else {
+        field += char;
+      }
+      continue;
+    }
+
+    if (quoteClosed && char !== "," && char !== "\r" && char !== "\n") {
+      throw new Error("A quoted CSV field has unexpected characters after its closing quote.");
+    }
+    if (char === '"') {
+      if (field) throw new Error("A quote appeared inside an unquoted CSV field.");
+      quoted = true;
+      quoteClosed = false;
+    } else if (char === ",") {
+      row.push(field);
+      field = "";
+      quoteClosed = false;
+    } else if (char === "\r" || char === "\n") {
+      if (char === "\r" && text[index + 1] === "\n") index += 1;
+      row.push(field);
+      if (row.some((cell) => cell !== "")) records.push(row);
+      row = [];
+      field = "";
+      quoteClosed = false;
+    } else {
+      field += char;
+    }
+  }
+  if (quoted) throw new Error("A quoted CSV field was not closed.");
+  row.push(field);
+  if (row.some((cell) => cell !== "")) records.push(row);
+  return records;
+}
+
+function validateProjectExport(job, csvText) {
+  const records = parseCsv(csvText.replace(/^\uFEFF/, ""));
+  if (records.length < 2) throw new Error("The CSV must include a header and all labeled task rows.");
+
+  const headers = records[0].map((header) => header.trim().toLowerCase());
+  const required = ["task_id", "review_text", "label"];
+  const columns = Object.fromEntries(required.map((header) => [header, headers.indexOf(header)]));
+  const missingHeaders = required.filter((header) => columns[header] < 0);
+  if (missingHeaders.length) throw new Error(`Missing required column${missingHeaders.length > 1 ? "s" : ""}: ${missingHeaders.join(", ")}.`);
+  if (required.some((header) => headers.lastIndexOf(header) !== columns[header])) {
+    throw new Error("Required CSV column names must appear only once.");
+  }
+
+  const expected = new Map(job.workItems.map((item) => [item.id, item]));
+  const submitted = new Map();
+  for (const [index, values] of records.slice(1).entries()) {
+    if (values.length !== headers.length) throw new Error(`CSV row ${index + 2} has ${values.length} fields; expected ${headers.length}.`);
+    const taskId = values[columns.task_id].trim();
+    if (!expected.has(taskId)) throw new Error(`Unknown task ID "${taskId}" on CSV row ${index + 2}.`);
+    if (submitted.has(taskId)) throw new Error(`Task ID "${taskId}" appears more than once.`);
+    const item = expected.get(taskId);
+    if (values[columns.review_text] !== item.q) throw new Error(`Review text for ${taskId} was changed. Keep source text unchanged.`);
+    const label = values[columns.label].trim();
+    if (!LABELS.includes(label)) throw new Error(`Invalid or missing label for ${taskId}. Use exactly: ${LABELS.join(", ")}.`);
+    submitted.set(taskId, label);
+  }
+
+  const missing = [...expected.keys()].filter((taskId) => !submitted.has(taskId));
+  if (missing.length) throw new Error(`Missing ${missing.length} task row${missing.length === 1 ? "" : "s"}: ${missing.join(", ")}.`);
+
+  const feedback = job.workItems.map((item) => ({
+    id: item.id,
+    text: item.q,
+    submitted: submitted.get(item.id),
+    correct: item.a,
+    why: item.why,
+  }));
+  return { score: feedback.filter((item) => item.submitted === item.correct).length, feedback };
+}
+
+async function submitExport(id) {
   const job = find(id);
   if (!job || !proposalProgress[id] || !proposalProgress[id].qualified) return board();
+  const file = document.getElementById("export-file").files[0];
+  const status = document.getElementById("submission-status");
+  if (!file) {
+    status.textContent = "Choose your completed CSV export before submitting.";
+    status.className = "no";
+    return;
+  }
+  if (file.size > 1024 * 1024) {
+    status.textContent = "This sample export is larger than 1 MB. Check that you selected the project CSV, not a full dataset.";
+    status.className = "no";
+    return;
+  }
+  if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv") {
+    status.textContent = "This project accepts CSV files only. Export your annotations as .csv and try again.";
+    status.className = "no";
+    return;
+  }
 
-  const answers = job.workItems.map((_, index) => {
-    const checked = document.querySelector(`input[name=work${index}]:checked`);
-    return checked ? checked.value : "";
-  });
-  if (answers.includes("") && !confirm("Some labels are missing. Submit anyway?")) return;
+  let checked;
+  try {
+    checked = validateProjectExport(job, await file.text());
+  } catch (error) {
+    status.textContent = `Submission not accepted: ${error instanceof Error ? error.message : "The selected CSV could not be read."}`;
+    status.className = "no";
+    return;
+  }
 
-  const score = answers.filter((answer, index) => answer === job.workItems[index].a).length;
+  const { score, feedback } = checked;
   const result = await save({
     jobId: job.id,
     jobTitle: job.title,
-    type: "practice_batch",
+    type: "practice_export",
     score,
     total: job.workItems.length,
-    answers,
+    answers: feedback.map((item) => item.submitted),
   });
   summary = `Name: ${name}\nJob: ${job.title}\nPractice batch: ${score}/${job.workItems.length}`;
 
   draw(`
-    <h1>Practice batch submitted</h1>
+    <h1>CSV export submitted</h1>
     <div class="panel"><p><b>${score} out of ${job.workItems.length} labels correct.</b></p>
       <p class="mu">${statusText(result)}</p>
       <button class="gh" data-act="copy">Copy my results</button>
-      <button class="pr" data-act="open" data-id="${id}">Review the job brief</button>
+      <button class="pr" data-act="offer" data-id="${id}">Review the job brief</button>
     </div>
-    ${job.workItems.map((item, index) => `
-      <div class="panel"><p><b>${index + 1}. ${esc(item.q)}</b></p>
-        <p>Your label: <span class="${answers[index] === item.a ? "ok" : "no"}">${answers[index] ? esc(answers[index]) : "Not answered"}</span></p>
-        <p>Best label: <b>${esc(item.a)}</b>. ${esc(item.why)}</p>
+    ${feedback.map((item, index) => `
+      <div class="panel"><p><b>${index + 1}. ${esc(item.id)} — ${esc(item.text)}</b></p>
+        <p>Your label: <span class="${item.submitted === item.correct ? "ok" : "no"}">${esc(item.submitted)}</span></p>
+        <p>Best label: <b>${esc(item.correct)}</b>. ${esc(item.why)}</p>
       </div>
     `).join("")}
   `);
@@ -534,11 +754,14 @@ async function bid(id) {
     words: text.split(/\s+/).length,
   });
 
-  if (job.scam) {
-    proposalProgress[job.id] = { accepted: false, tool, qualified: false };
-  } else {
-    proposalProgress[job.id] = { accepted: true, tool, qualified: false };
-  }
+  const issuedAt = new Date();
+  proposalProgress[job.id] = {
+    accepted: !job.scam,
+    tool,
+    qualified: false,
+    issuedAt,
+    deadline: createDeadline(issuedAt),
+  };
 
   summary = `Name: ${name}\nJob: ${job.title}\nTool: ${tool}\nProposal: ${text}`;
 
@@ -854,8 +1077,25 @@ app.addEventListener("click", (event) => {
     return;
   }
 
-  if (action === "submit-work") {
-    submitWork(id);
+  if (action === "download-brief") {
+    const job = find(id);
+    const progress = proposalProgress[id];
+    if (job && job.workItems && progress && progress.qualified) {
+      downloadFile("review-sentiment-project-brief.txt", projectBrief(job, progress), "text/plain;charset=utf-8");
+    }
+    return;
+  }
+
+  if (action === "download-template") {
+    const job = find(id);
+    if (job && job.workItems && proposalProgress[id] && proposalProgress[id].qualified) {
+      downloadFile("review-sentiment-template.csv", projectCsv(job), "text/csv;charset=utf-8");
+    }
+    return;
+  }
+
+  if (action === "submit-export") {
+    submitExport(id);
     return;
   }
 
