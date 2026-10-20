@@ -38,21 +38,54 @@ const rememberSeen = () => {
 
 // Picks a balanced round of new tasks. Used tasks are skipped until the pool runs out.
 const buildPracticeSet = () => {
+  if (!POOL.length) return [];
+
+  const roundSize = Math.max(1, Math.min(Number(CONFIG.ROUND_SIZE) || LABELS.length, POOL.length));
   let fresh = POOL.filter((task) => !seen.has(task.id));
-  if (fresh.length < CONFIG.ROUND_SIZE) {
+
+  if (fresh.length < roundSize) {
     seen.clear();
     fresh = [...POOL];
   }
-  const perLabel = Math.floor(CONFIG.ROUND_SIZE / LABELS.length);
-  const chosen = [];
-  LABELS.forEach((label) => {
-    chosen.push(...shuffle(fresh.filter((task) => task.a === label.id)).slice(0, perLabel));
+
+  const labelTargets = LABELS.map((_, index) => {
+    const base = Math.floor(roundSize / LABELS.length);
+    return base + (index < roundSize % LABELS.length ? 1 : 0);
   });
-  const rest = shuffle(fresh.filter((task) => !chosen.includes(task)));
-  chosen.push(...rest.slice(0, CONFIG.ROUND_SIZE - chosen.length));
-  chosen.forEach((task) => seen.add(task.id));
+
+  const chosen = [];
+  const chosenIds = new Set();
+
+  LABELS.forEach((label, index) => {
+    shuffle(fresh.filter((task) => task.a === label.id && !chosenIds.has(task.id)))
+      .slice(0, labelTargets[index])
+      .forEach((task) => {
+        chosen.push(task);
+        chosenIds.add(task.id);
+      });
+  });
+
+  const remainingSlots = Math.max(0, roundSize - chosen.length);
+  shuffle(fresh.filter((task) => !chosenIds.has(task.id)))
+    .slice(0, remainingSlots)
+    .forEach((task) => {
+      chosen.push(task);
+      chosenIds.add(task.id);
+    });
+
+  if (chosen.length < roundSize) {
+    shuffle([...POOL].filter((task) => !chosenIds.has(task.id)))
+      .slice(0, roundSize - chosen.length)
+      .forEach((task) => {
+        chosen.push(task);
+        chosenIds.add(task.id);
+      });
+  }
+
+  const finalSet = shuffle(chosen).map((task) => ({ ...task }));
+  finalSet.forEach((task) => seen.add(task.id));
   rememberSeen();
-  return shuffle(chosen).map((task) => ({ ...task }));
+  return finalSet.slice(0, roundSize);
 };
 const buildLabelOrder = () => shuffle([...LABELS]).map((label) => ({ ...label }));
 

@@ -41,11 +41,13 @@ function money(usd) {
 const WALLET_STORAGE_KEY = "pda-wallet-v1";
 const emptyWallet = () => ({ pending: 0, available: 0, withdrawn: 0, history: [] });
 let walletStorageAvailable = true;
+let activeWithdrawal = null;
 
 function validWallet(value) {
   return value && typeof value === "object" &&
     ["pending", "available", "withdrawn"].every((key) => Number.isFinite(value[key]) && value[key] >= 0) &&
-    Array.isArray(value.history);
+    Array.isArray(value.history) &&
+    value.history.every((item) => item && typeof item.jobId === "string" && Number.isFinite(item.amount));
 }
 
 function loadWallet() {
@@ -100,6 +102,126 @@ function addWalletControls() {
   status.hidden = walletStorageAvailable;
   header.appendChild(status);
   updateWalletControls();
+}
+
+function resetPracticeData() {
+  if (!confirm("Clear the practice wallet and all completed-job records on this device?")) return;
+  wallet = emptyWallet();
+  activeWithdrawal = null;
+  Object.keys(proposalProgress).forEach((id) => delete proposalProgress[id]);
+  try {
+    localStorage.removeItem(WALLET_STORAGE_KEY);
+    walletStorageAvailable = true;
+  } catch (error) {
+    walletStorageAvailable = false;
+  }
+  persistWallet();
+  board();
+}
+
+const completedJobIds = () => new Set(wallet.history.filter((entry) => entry.type === "earning").map((entry) => entry.jobId));
+
+function showWallet() {
+  const belowMinimum = Math.max(0, PAY_CONFIG.minWithdrawalUSD - wallet.available);
+  draw(`
+    <button class="gh" data-act="back">Back to jobs</button>
+    <h1>Practice wallet</h1>
+    <p class="mu">Illustrative balances only. No money is held or transferred.</p>
+    <div class="wallet-grid">
+      <div class="panel"><b>Pending</b><p>${money(wallet.pending)}</p><span class="mu">Submitted; not yet approved</span></div>
+      <div class="panel"><b>Available</b><p>${money(wallet.available)}</p></div>
+      <div class="panel"><b>Withdrawn</b><p>${money(wallet.withdrawn)}</p></div>
+    </div>
+    <div class="panel">
+      <h2>Withdrawal</h2>
+      <p>Illustrative minimum: ${money(PAY_CONFIG.minWithdrawalUSD)}.</p>
+      ${belowMinimum > 0
+        ? `<p>You need ${money(belowMinimum)} more before you can withdraw.</p><button class="gh" data-act="back">Browse jobs</button>`
+        : acct.pay
+          ? `<p>Available balance meets the illustrative threshold.</p><button class="pr" data-act="withdraw">Request withdrawal</button>`
+          : `<p>Link a practice payout method before requesting a withdrawal.</p><button class="pr" data-act="payment-setup">Go to payment setup</button>`}
+    </div>
+    <div class="panel"><h2>History</h2>${wallet.history.length
+      ? `<ul>${[...wallet.history].reverse().map((entry) => `<li>${esc(entry.jobTitle || entry.jobId)} · ${esc(formatDate(new Date(entry.date)))} · ${entry.type === "withdrawal" ? "Withdrawal" : "Net earnings"}: ${money(entry.amount)}${entry.status ? ` · ${esc(entry.status)}` : ""}</li>`).join("")}</ul>`
+      : "<p>No practice earnings yet.</p>"}</div>
+  `);
+}
+
+function withdrawalEstimate(method, amount) {
+  const terms = PAYOUT_METHODS[method];
+  const fee = Math.min(amount, amount * (terms.feePct || 0) / 100 + (terms.feeFlatUSD || 0));
+  const arrival = new Date();
+  let remainingDays = terms.arrivalBusinessDays;
+  while (remainingDays > 0) {
+    arrival.setDate(arrival.getDate() + 1);
+    if (arrival.getDay() !== 0 && arrival.getDay() !== 6) remainingDays -= 1;
+  }
+  return { fee, receive: amount - fee, arrival, terms };
+}
+
+function showWithdrawal() {
+  if (wallet.available < PAY_CONFIG.minWithdrawalUSD) return showWallet();
+  if (!acct.pay) {
+    pendingJob = "wallet";
+    return setup();
+  }
+  const estimate = withdrawalEstimate(acct.pay, wallet.available);
+  draw(`
+    <button class="gh" data-act="wallet">Back to wallet</button>
+    <h1>Review withdrawal</h1>
+    <div class="panel">
+      <p><b>Method:</b> ${esc(acct.pay)}</p>
+      <p><b>Available:</b> ${money(wallet.available)}</p>
+      <p><b>Illustrative fee:</b> ${money(estimate.fee)} (${esc(estimate.terms.note)})</p>
+      <p><b>Illustrative amount received:</b> ${money(estimate.receive)}</p>
+      <p><b>Illustrative arrival:</b> ${esc(formatDate(estimate.arrival))} (${estimate.terms.arrivalBusinessDays} business day${estimate.terms.arrivalBusinessDays === 1 ? "" : "s"})</p>
+      <button class="pr" data-act="confirm-withdrawal">Confirm simulated withdrawal</button>
+    </div>
+  `);
+}
+
+async function confirmWithdrawal() {
+  if (!acct.pay || wallet.available < PAY_CONFIG.minWithdrawalUSD) return showWallet();
+  const amount = wallet.available;
+  const { fee, receive, arrival, terms } = withdrawalEstimate(acct.pay, amount);
+  const reference = `WD-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 90000) + 10000)}`;
+  const record = {
+    type: "withdrawal",
+    jobId: "wallet",
+    jobTitle: "Practice wallet",
+    amount: receive,
+    date: new Date().toISOString(),
+    status: "Requested",
+    reference,
+    fee,
+    method: acct.pay,
+    arrival: arrival.toISOString(),
+    arrivalBusinessDays: terms.arrivalBusinessDays,
+  };
+  wallet.available = 0;
+  wallet.withdrawn += amount;
+  wallet.history.push(record);
+  activeWithdrawal = record;
+  persistWallet();
+  await save({ type: "practice_withdrawal", amount: receive, currency: "USD", jobId: "wallet", payoutMethod: acct.pay });
+  showWithdrawalStatus();
+}
+
+function showWithdrawalStatus() {
+  if (!activeWithdrawal) return showWallet();
+  const stages = ["Requested", "Processing", "Sent", "Arrived"];
+  const current = stages.indexOf(activeWithdrawal.status);
+  draw(`
+    <h1>Withdrawal requested</h1>
+    <div class="panel">
+      <p><b>Practice reference:</b> ${esc(activeWithdrawal.reference)}</p>
+      <p>${money(activeWithdrawal.amount)} via ${esc(activeWithdrawal.method)} · illustrative</p>
+      <ol class="timeline">${stages.map((stage, index) => `<li class="${index <= current ? "ok" : ""}">${esc(stage)}${stage === "Arrived" ? ` · expected ${esc(formatDate(new Date(activeWithdrawal.arrival)))}` : ""}</li>`).join("")}</ol>
+      ${current < stages.length - 1 ? '<button class="pr" data-act="advance-withdrawal">Simulate time passing</button>' : "<p>Simulation complete. No transfer was made.</p>"}
+      <button class="gh" data-act="wallet">View wallet</button>
+      <button class="gh" data-act="back">Back to jobs</button>
+    </div>
+  `);
 }
 
 /* ---------- Jobs: edit or add your own ---------- */
