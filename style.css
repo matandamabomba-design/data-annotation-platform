@@ -11,6 +11,26 @@ body {
   line-height: 1.55;
 }
 
+body.practice-intro {
+  background-image:
+    linear-gradient(180deg, rgba(8, 20, 40, 0.84), rgba(8, 20, 40, 0.68)),
+    url("assets/home-bg.jpg"),
+    var(--brand-gradient);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+body.practice-intro #intro > p,
+body.practice-intro #intro > p a,
+body.practice-intro #intro h1 {
+  color: #fff;
+}
+
+body.practice-intro #intro > p.muted {
+  color: #fff;
+}
+
 main {
   max-width: 58rem;
   margin: 0 auto;

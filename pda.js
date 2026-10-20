@@ -156,6 +156,7 @@ function show(sectionId) {
       el.classList.toggle("hidden", section !== sectionId);
     }
   });
+  document.body.classList.toggle("practice-intro", sectionId === "intro");
   window.scrollTo({ top: 0, behavior: "auto" });
 }
 
@@ -417,6 +418,7 @@ function copySummary() {
 
 updateMetaText();
 resetNameButton();
+show("intro");
 
 $("name").addEventListener("input", resetNameButton);
 $("start").addEventListener("click", start);
