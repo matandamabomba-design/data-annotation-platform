@@ -11,6 +11,97 @@ const FIREBASE_CONFIG = {
 };
 const FB = "https://www.gstatic.com/firebasejs/10.14.1/";
 
+// All rates and payout terms below are editable practice examples, not live offers.
+const PAY_CONFIG = {
+  platformFeePct: 10,
+  qualityBonusPct: 10,
+  minWithdrawalUSD: 10,
+  acceptThresholdPct: 80,
+};
+
+const PAYOUT_METHODS = {
+  PayPal: { feePct: 2, feeFlatUSD: 0.3, arrivalBusinessDays: 1, note: "Illustrative processing fee; check the provider's current terms." },
+  Payoneer: { feePct: 1.5, feeFlatUSD: 1, arrivalBusinessDays: 2, note: "Illustrative processing fee; check the provider's current terms." },
+  "Mastercard or Visa card": { feePct: 2.9, feeFlatUSD: 0.3, arrivalBusinessDays: 3, note: "Illustrative processing fee; check the provider's current terms." },
+  "Bank account": { feePct: 1, feeFlatUSD: 3, arrivalBusinessDays: 3, note: "Illustrative processing fee; check the provider's current terms." },
+};
+
+const DISPLAY_LOCAL = {
+  code: "UGX",
+  perUSD: 3700,
+  note: "illustrative rate, check today's real rate",
+};
+
+function money(usd) {
+  const amount = Number(usd);
+  const localAmount = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.round(amount * DISPLAY_LOCAL.perUSD / 100) * 100);
+  return `$${amount.toFixed(2)} (about ${DISPLAY_LOCAL.code} ${localAmount})`;
+}
+
+const WALLET_STORAGE_KEY = "pda-wallet-v1";
+const emptyWallet = () => ({ pending: 0, available: 0, withdrawn: 0, history: [] });
+let walletStorageAvailable = true;
+
+function validWallet(value) {
+  return value && typeof value === "object" &&
+    ["pending", "available", "withdrawn"].every((key) => Number.isFinite(value[key]) && value[key] >= 0) &&
+    Array.isArray(value.history);
+}
+
+function loadWallet() {
+  try {
+    const stored = localStorage.getItem(WALLET_STORAGE_KEY);
+    if (stored === null) return emptyWallet();
+    const parsed = JSON.parse(stored);
+    if (validWallet(parsed)) return parsed;
+    walletStorageAvailable = false;
+  } catch (error) {
+    walletStorageAvailable = false;
+  }
+  return emptyWallet();
+}
+
+let wallet = loadWallet();
+
+function persistWallet() {
+  try {
+    localStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify(wallet));
+    walletStorageAvailable = true;
+  } catch (error) {
+    walletStorageAvailable = false;
+  }
+  updateWalletControls();
+}
+
+function updateWalletControls() {
+  const status = document.getElementById("wallet-storage-status");
+  if (status) {
+    status.hidden = walletStorageAvailable;
+    status.textContent = walletStorageAvailable ? "" : "Wallet data is session-only because browser storage is unavailable.";
+  }
+}
+
+function addWalletControls() {
+  const header = document.querySelector(".site-header");
+  if (!header || document.getElementById("wallet-reset")) return;
+  const reset = document.createElement("button");
+  reset.id = "wallet-reset";
+  reset.type = "button";
+  reset.className = "gh";
+  reset.dataset.x = "wallet-reset";
+  reset.textContent = "Reset practice data";
+  reset.setAttribute("aria-label", "Reset practice wallet data");
+  header.appendChild(reset);
+
+  const status = document.createElement("span");
+  status.id = "wallet-storage-status";
+  status.className = "mu";
+  status.setAttribute("role", "status");
+  status.hidden = walletStorageAvailable;
+  header.appendChild(status);
+  updateWalletControls();
+}
+
 /* ---------- Jobs: edit or add your own ---------- */
 const LABELS = ["Positive", "Negative", "Neutral"];
 
@@ -20,7 +111,12 @@ const JOBS = [
     type: "bid",
     title: "Label 150 customer reviews for an online shop",
     client: "Small online retailer",
-    pay: "$4 per hour",
+    modality: "text",
+    datasetSize: 150,
+    payModel: "hourly",
+    rate: 4,
+    estimatedHours: 2.5,
+    unit: "task",
     seats: "2 seats",
     cap: "5 - 10 h/week",
     short: "Mark each review as positive, negative or neutral. The client sends the full guidelines to the freelancer they choose.",
@@ -50,28 +146,15 @@ const JOBS = [
     ],
   },
   {
-    id: "j2",
-    type: "bid",
-    scam: true,
-    title: "Easy data entry. Earn $30 per hour, start today!",
-    client: "Global Data Jobs Ltd",
-    pay: "$30 per hour",
-    seats: "More than 100 seats",
-    cap: "Any time",
-    short: "No experience needed. Pay a small fee for your software licence and start immediately.",
-    detail: "To activate your account, send a $15 licence fee by mobile money, then send your ID photo and bank details on WhatsApp. Work starts today.",
-    flags: [
-      "It asks you to pay a fee before work. Real platforms never charge to apply.",
-      "The pay is far too high for no experience.",
-      "It moves you to WhatsApp and asks for your ID and bank details.",
-      "It never describes the actual task.",
-    ],
-  },
-  {
     id: "j3",
     type: "qual",
     title: "Text Sentiment Labeling",
-    pay: "~$0.02 per task",
+    modality: "text",
+    datasetSize: 5,
+    payModel: "perTask",
+    rate: 0,
+    estimatedHours: 0.25,
+    unit: "task",
     seats: "More than 50 seats",
     cap: "5 - 10 h/week",
     pass: 4,
@@ -88,7 +171,12 @@ const JOBS = [
     id: "j4",
     type: "pool",
     title: "Which answer is better?",
-    pay: "~$0.01 per task",
+    modality: "text",
+    datasetSize: 4,
+    payModel: "perTask",
+    rate: 0.01,
+    estimatedHours: 0.25,
+    unit: "task",
     seats: "More than 50 seats",
     cap: "5 - 30 h/week",
     short: "Read two AI answers to the same question and choose the better one.",
@@ -120,6 +208,17 @@ const JOBS = [
     ],
   },
 ];
+
+function formatJobPay(job) {
+  if (job.rate === 0) return "Unpaid qualification";
+  const rate = `$${Number(job.rate.toFixed(2))}`;
+  return job.payModel === "hourly" ? `${rate} per hour` : `~${rate} per ${job.unit}`;
+}
+
+JOBS.forEach((job) => {
+  job.maxBillableHours = job.estimatedHours * 1.5;
+  job.pay = formatJobPay(job);
+});
 
 const GUIDE = [
   "<mark class='pos'>Positive</mark> The writer is happy, satisfied or praising.",
@@ -1200,7 +1299,18 @@ document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-x]");
   if (!b) return;
   const x = b.dataset.x, s = idState;
-  if (x === "mclose") modal("");
+  if (x === "wallet-reset") {
+    if (!window.confirm("Reset the practice wallet? This clears its balance and history from this browser.")) return;
+    wallet = emptyWallet();
+    try {
+      localStorage.removeItem(WALLET_STORAGE_KEY);
+      walletStorageAvailable = true;
+    } catch (error) {
+      walletStorageAvailable = false;
+    }
+    updateWalletControls();
+    toast("Practice wallet reset.");
+  } else if (x === "mclose") modal("");
   else if (x === "phgo") phoneStep(1);
   else if (x === "psend") {
     const v = gid("ph").value.trim();
@@ -1400,6 +1510,7 @@ app.addEventListener("keydown", (event) => {
   }
 });
 
+addWalletControls();
 gate();
 chatInit();
 initFirebase();

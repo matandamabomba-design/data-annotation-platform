@@ -114,6 +114,16 @@ select:focus-visible {
   background: var(--surface);
 }
 
+.site-header #wallet-reset {
+  margin-left: auto;
+}
+
+.site-header #wallet-storage-status {
+  flex-basis: 100%;
+  text-align: right;
+  font-size: 0.8rem;
+}
+
 .brand-mark {
   display: block;
   width: 36px;
@@ -207,6 +217,18 @@ mark.neu,
 
 .no {
   color: var(--danger);
+}
+
+@media (max-width: 34rem) {
+  .site-header {
+    flex-wrap: wrap;
+  }
+
+  .site-header #wallet-reset {
+    margin-left: auto;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.875rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
