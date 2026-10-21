@@ -1,0 +1,8 @@
+{
+  "jobId": "t1",
+  "archive": {
+    "path": "pack.zip",
+    "available": true
+  },
+  "files": []
+}
