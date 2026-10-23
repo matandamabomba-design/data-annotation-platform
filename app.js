@@ -155,9 +155,9 @@ function makeJob(spec) {
         return { q: item.q, good: item.good, bad: item.bad, why: item.why };
       }),
     },
-    workItems: spec.references.map((item) => ({
+    workItems: (spec.references || []).map((item) => ({
       ...item,
-      q: item.text || item.clip || item.image || item.claim || item.question || item.sentence || item.context || item.scene || item.id,
+      q: item.text || item.review_text || item.sentence || item.message || item.article || item.claim || item.prompt || item.clip || item.image || item.id,
     })),
     ok: spec.scam ? "The warning signs should be reported." : "Check the written terms and never pay to apply.",
     pay: "",
@@ -176,22 +176,31 @@ const JOBS = [
     scoring: { type: "classification", labels: LABELS }, assets: "assets/projects/j1/manifest.json",
     guidelines: ["Positive: clear praise or satisfaction. Example: “The delivery was quick and careful.”", "Negative: a complaint or warning. Example: “The zip broke on day one.”", "Neutral: facts or equally weighted praise and complaint. Sarcasm follows the intended meaning."],
     quiz: [{ q: "A review says “Perfect, another order lost.” Which label fits the sarcasm?", good: "Negative", bad: "Positive", why: "The writer is expressing frustration." }],
+    sourceColumns: ["review_text"],
     references: [
-      { id: "REV-001", text: "The delivery arrived early and everything was packed carefully.", label: "Positive", why: "The customer praises the delivery." },
-      { id: "REV-002", text: "The jacket looks great, but the zip broke on the first day.", label: "Negative", why: "The product failure outweighs the brief praise." },
+      { id: "REV-001", review_text: "The delivery arrived early and everything was packed carefully.", label: "Positive" },
+      { id: "REV-002", review_text: "Perfect, another order lost. Exactly what I hoped for.", label: "Negative" },
+      { id: "REV-003", review_text: "The cup is sturdy, though the lid leaks whenever I turn it.", label: "Negative" },
+      { id: "REV-004", review_text: "The parcel contains a blue notebook and two pencils.", label: "Neutral" },
+      { id: "REV-005", review_text: "The fabric feels soft and the color is lovely.", label: "Positive" },
+      { id: "REV-006", review_text: "It arrived on Tuesday, as the tracking page predicted.", label: "Neutral" },
+      { id: "REV-007", review_text: "Great, the app crashed just as I finished checkout.", label: "Negative" },
+      { id: "REV-008", review_text: "The lamp looks elegant, but its switch is awkward to reach.", label: "Neutral" },
+      { id: "REV-009", review_text: "I have bought this twice and both copies stopped working.", label: "Negative" },
+      { id: "REV-010", review_text: "The box was plain, and the item matched the listed dimensions.", label: "Neutral" },
+      { id: "REV-011", review_text: "A thoughtful design and a quick, helpful reply from support.", label: "Positive" },
+      { id: "REV-012", review_text: "Wonderful service: nobody answered my question for a week.", label: "Negative" },
     ],
   }),
   makeJob({
     id: "j2", title: "Easy data entry. Earn $30 per hour, start today!", modality: "text", kind: "bid", scam: true,
-    client: "Global Data Jobs Ltd", summary: "No experience needed. Pay a small fee for your software licence and start immediately.",
-    detail: "To activate your account, send a $15 licence fee by mobile money, then send your ID photo and bank details on WhatsApp. Work starts today.",
+    client: "Global Data Jobs Ltd", summary: "No experience needed. Earn $30 per hour. Pay a $15 software licence fee before starting, then send an ID photo and bank details to the coordinator on WhatsApp. Task details will follow.",
+    detail: "The listing says the work is easy data entry, asks applicants to pay a $15 software licence fee before starting, and requests contact on WhatsApp with an ID photo and bank details. No specific data-entry task is described.",
     payModel: { type: "hourly", rate: 30, maxHours: 1, minAccuracy: 0.8 }, deadline: { days: 7, timeZone: "Africa/Kampala" },
-    tools: ["Spreadsheet"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "label"], template: "scam-template.csv" },
-    scoring: { type: "classification", labels: ["scam", "not_scam"] }, assets: "assets/projects/j2/manifest.json",
-    guidelines: ["Never pay a fee to apply or unlock work.", "Do not send identity or bank details through chat.", "Verify the company and task through its official platform."],
-    flags: ["It asks you to pay a fee before work. Real platforms never charge to apply.", "The pay is far too high for no experience.", "It moves you to WhatsApp and asks for your ID and bank details.", "It never describes the actual task."],
-    quiz: [{ q: "The listing asks for an upfront licence fee. What should you do?", good: "Report it and do not pay", bad: "Pay quickly to secure a seat", why: "Legitimate platforms do not charge an application fee." }],
-    references: [{ id: "SCAM-001", text: "Send a $15 fee and ID photo on WhatsApp.", label: "scam" }, { id: "SCAM-002", text: "Apply through the company’s verified platform; no payment is requested.", label: "not_scam" }],
+    tools: ["Spreadsheet"],
+    flags: ["It asks for a fee before work.", "The pay is unusually high for a role requiring no experience.", "It moves the conversation to WhatsApp.", "It asks for an ID photo and bank details.", "It gives no real task description."],
+    quiz: [{ q: "A listing requests payment before any work begins. What should you do?", good: "Report it and do not pay", bad: "Pay quickly to secure a seat", why: "An upfront payment request is a warning sign." }],
+    references: [],
   }),
   makeJob({
     id: "j3", title: "Text sentiment labeling qualification", modality: "text", kind: "qual", client: "ClearTone Research",
@@ -202,18 +211,46 @@ const JOBS = [
     scoring: { type: "classification", labels: LABELS }, assets: "assets/projects/j3/manifest.json",
     guidelines: ["Read the complete sentence before choosing.", "Treat sarcasm by the meaning, not the literal words.", "Use Neutral for facts or equally balanced positive and negative details."],
     quiz: [{ q: "“Nobody should buy it; the screen failed on day one.”", good: "Negative", bad: "Neutral", why: "This is a clear complaint and warning." }],
-    references: [{ id: "SENT-001", text: "I love how easy the dashboard is.", label: "Positive" }, { id: "SENT-002", text: "The package contains two notebooks.", label: "Neutral" }],
+    sourceColumns: ["text"],
+    references: [
+      { id: "SENT-001", text: "I love how easy the dashboard is.", label: "Positive" },
+      { id: "SENT-002", text: "The package contains two notebooks.", label: "Neutral" },
+      { id: "SENT-003", text: "Brilliant, the update erased all my saved notes.", label: "Negative" },
+      { id: "SENT-004", text: "The lesson was clear and the examples made the topic click.", label: "Positive" },
+      { id: "SENT-005", text: "The bus left at 8:15 and reached the station at 9:00.", label: "Neutral" },
+      { id: "SENT-006", text: "The screen is bright, but the battery barely lasts an hour.", label: "Negative" },
+      { id: "SENT-007", text: "What a fantastic queue: only forty minutes to buy one ticket.", label: "Negative" },
+      { id: "SENT-008", text: "The room was quiet, although the chair was uncomfortable.", label: "Neutral" },
+      { id: "SENT-009", text: "The garden looks fresh after the rain.", label: "Positive" },
+      { id: "SENT-010", text: "My request was closed without anyone reading the details.", label: "Negative" },
+      { id: "SENT-011", text: "The notice lists the room number as 204.", label: "Neutral" },
+      { id: "SENT-012", text: "Helpful staff found the missing parcel before lunch.", label: "Positive" },
+    ],
   }),
   makeJob({
     id: "j4", title: "Which answer is better?", modality: "text", kind: "pool", client: "AnswerBench Studio",
     summary: "Compare short AI answers and select the response that best follows the request and stays accurate.",
     detail: "Compare two candidate answers to a single prompt. Prefer factual, relevant answers that follow the requested format. Do not reward confidence when a response invents facts, and do not prefer a longer answer unless the task requires detail.",
     payModel: { type: "perTask", rate: 0.05, maxHours: 3, minAccuracy: 0.8 }, deadline: { days: 7, timeZone: "Africa/Kampala" },
-    tools: ["Spreadsheet"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "label"], template: "answers-template.csv" },
+    tools: ["Spreadsheet"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "prompt", "answer_a", "answer_b", "label"], template: "answers-template.csv" },
     scoring: { type: "classification", labels: ["A", "B"] }, assets: "assets/projects/j4/manifest.json",
     guidelines: ["Check factual claims.", "Follow the requested format and length.", "Choose A for the stronger answer, B for the weaker one; both can be imperfect."],
     quiz: [{ q: "An answer is confident but names the wrong capital. Which should you prefer?", good: "The accurate answer", bad: "The confident answer", why: "Factual correctness matters more than confidence." }],
-    references: [{ id: "AB-001", text: "What is Uganda’s capital?", label: "A" }, { id: "AB-002", text: "Explain a refund in one sentence.", label: "A" }],
+    sourceColumns: ["prompt", "answer_a", "answer_b"],
+    references: [
+      { id: "AB-001", prompt: "What is the capital of Uganda?", answer_a: "Kampala is the capital of Uganda.", answer_b: "Uganda's capital is Entebbe.", label: "A" },
+      { id: "AB-002", prompt: "Explain a refund in one short sentence.", answer_a: "A refund returns money paid for a purchase.", answer_b: "A refund is when a customer gets money back for a purchase.", label: "B" },
+      { id: "AB-003", prompt: "Name the largest planet in our solar system.", answer_a: "Jupiter is the largest planet in our solar system.", answer_b: "Saturn is the largest planet, with exactly 82 moons.", label: "A" },
+      { id: "AB-004", prompt: "Give exactly two ways to save water.", answer_a: "Take shorter showers and repair leaking taps.", answer_b: "Water is important. People have used it for centuries, and there are many interesting facts about rivers, oceans, clouds, and rain.", label: "A" },
+      { id: "AB-005", prompt: "What is 7 multiplied by 6?", answer_a: "Seven multiplied by six is 42.", answer_b: "Seven multiplied by six is 48.", label: "A" },
+      { id: "AB-006", prompt: "Describe a triangle in one sentence.", answer_a: "A triangle is a polygon with three sides.", answer_b: "A triangle is a shape with four equal sides and four corners.", label: "A" },
+      { id: "AB-007", prompt: "List two common ways to travel around a city.", answer_a: "Cities are large places with roads and buildings.", answer_b: "People often travel by bus or bicycle.", label: "B" },
+      { id: "AB-008", prompt: "What does a thermometer measure?", answer_a: "A thermometer measures temperature.", answer_b: "A thermometer measures distance, usually in meters.", label: "A" },
+      { id: "AB-009", prompt: "Answer with one fruit: name a fruit with a peel.", answer_a: "Banana.", answer_b: "A banana has a peel. It grows on plants, is popular in many places, and can be used in several recipes.", label: "A" },
+      { id: "AB-010", prompt: "Why should food be kept covered?", answer_a: "Covering food can reduce exposure to dust and insects.", answer_b: "Food should be covered because all uncovered food becomes poisonous in ten minutes.", label: "A" },
+      { id: "AB-011", prompt: "What is the usual purpose of a library?", answer_a: "A library is a place where people can access books and other learning resources.", answer_b: "Libraries are mainly places to repair bicycles.", label: "A" },
+      { id: "AB-012", prompt: "Give a one-word answer: what season follows spring?", answer_a: "Summer.", answer_b: "Summer is generally the warm season that follows spring in the common four-season calendar.", label: "A" },
+    ],
   }),
   makeJob({
     id: "t1", title: "Classify shop-chat assistant intents", modality: "text", kind: "pool", client: "ShopPilot Labs",
@@ -224,20 +261,45 @@ const JOBS = [
     scoring: { type: "classification", labels: ["refund", "delivery_status", "account_help", "complaint", "other"] }, assets: "assets/projects/t1/manifest.json",
     guidelines: ["Choose the main requested action, not every topic mentioned.", "Refund includes returning money or goods.", "Use other for unclear, greeting-only or unrelated messages."],
     quiz: [{ q: "“Where is my parcel?”", good: "delivery_status", bad: "account_help", why: "The customer asks for the shipment status." }],
-    references: [{ id: "T1-001", text: "Please return the money for my damaged order.", label: "refund" }, { id: "T1-002", text: "I cannot sign in to my profile.", label: "account_help" }],
+    sourceColumns: ["message"],
+    references: [
+      { id: "T1-001", message: "Please return the money for my damaged order.", label: "refund" },
+      { id: "T1-002", message: "Where is parcel QZ-14? The tracking page has not changed.", label: "delivery_status" },
+      { id: "T1-003", message: "I cannot sign in to my profile after changing my password.", label: "account_help" },
+      { id: "T1-004", message: "The cup arrived cracked and the box was wet.", label: "complaint" },
+      { id: "T1-005", message: "Can I return this lamp and get my payment back?", label: "refund" },
+      { id: "T1-006", message: "The courier says my parcel is still at the sorting center.", label: "delivery_status" },
+      { id: "T1-007", message: "Please update the email address on my account.", label: "account_help" },
+      { id: "T1-008", message: "The help page keeps sending me in circles.", label: "complaint" },
+      { id: "T1-009", message: "Hello, I have a question about the store.", label: "other" },
+      { id: "T1-010", message: "I was charged twice; please reverse the extra payment.", label: "refund" },
+      { id: "T1-011", message: "The delivery window says Thursday afternoon.", label: "delivery_status" },
+      { id: "T1-012", message: "Do you sell replacement notebook covers?", label: "other" },
+    ],
   }),
   makeJob({
     id: "t2", title: "Tag names and places in short news sentences", modality: "text", kind: "bid", client: "Civic News Index",
     summary: "Mark each named entity as PERSON, PLACE or ORGANIZATION.",
-    detail: "Identify explicit person, place and organization names in short fictional news-style sentences. Keep the exact spelling and punctuation-free entity text. Do not tag ordinary job titles or common nouns unless part of a proper name.",
+    detail: "Identify explicit person, place and organization names in short fictional news-style sentences. Add one row per entity, repeating task_id and sentence for each. Use NONE in both entity_text and entity_type when a sentence has no named entity. Keep exact spelling and punctuation-free entity text.",
     payModel: { type: "hourly", rate: 4.5, maxHours: 5, minAccuracy: 0.8 }, deadline: { days: 7, timeZone: "Africa/Kampala" },
-    tools: ["Labelbox", "Spreadsheet"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "entity_text", "type"], template: "ner-template.csv" },
+    tools: ["Labelbox", "Spreadsheet"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "sentence", "entity_text", "entity_type"], template: "ner-template.csv" },
     scoring: { type: "ner", labels: ["PERSON", "PLACE", "ORGANIZATION"] }, assets: "assets/projects/t2/manifest.json",
-    guidelines: ["Use exact entity boundaries and spelling.", "PERSON is an individual; PLACE is a location.", "ORGANIZATION includes named companies, agencies and institutions; do not guess implied names."],
+    guidelines: ["Use exact entity boundaries and spelling.", "PERSON is an individual; PLACE is a location.", "ORGANIZATION includes named companies, agencies and institutions; do not guess implied names.", "Duplicate task_id and sentence for each entity; use NONE in both entity columns when there is no entity."],
     quiz: [{ q: "In “Amina visited Nairobi,” what is Nairobi?", good: "PLACE", bad: "ORGANIZATION", why: "Nairobi is a named city." }],
+    sourceColumns: ["sentence"],
     references: [
-      { id: "T2-001", text: "Amina met the team in Kampala.", entities: [{ entity_text: "Amina", type: "PERSON" }] },
-      { id: "T2-002", text: "Lakeview Clinic opened in Jinja.", entities: [{ entity_text: "Lakeview Clinic", type: "ORGANIZATION" }] },
+      { id: "T2-001", sentence: "Amina met the team in Kampala.", entities: [{ entity_text: "Amina", entity_type: "PERSON" }, { entity_text: "Kampala", entity_type: "PLACE" }] },
+      { id: "T2-002", sentence: "Lakeview Clinic opened in Jinja.", entities: [{ entity_text: "Lakeview Clinic", entity_type: "ORGANIZATION" }, { entity_text: "Jinja", entity_type: "PLACE" }] },
+      { id: "T2-003", sentence: "Mina Okello presented the proposal in Luma Hall.", entities: [{ entity_text: "Mina Okello", entity_type: "PERSON" }, { entity_text: "Luma Hall", entity_type: "PLACE" }] },
+      { id: "T2-004", sentence: "The morning report included a weather chart.", entities: [{ entity_text: "NONE", entity_type: "NONE" }] },
+      { id: "T2-005", sentence: "Northwind Library opened a reading room in Aster Bay.", entities: [{ entity_text: "Northwind Library", entity_type: "ORGANIZATION" }, { entity_text: "Aster Bay", entity_type: "PLACE" }] },
+      { id: "T2-006", sentence: "Jonah Reed joined the Greenfield Council meeting.", entities: [{ entity_text: "Jonah Reed", entity_type: "PERSON" }, { entity_text: "Greenfield Council", entity_type: "ORGANIZATION" }] },
+      { id: "T2-007", sentence: "The notice lists three workshops for next month.", entities: [{ entity_text: "NONE", entity_type: "NONE" }] },
+      { id: "T2-008", sentence: "Riverbend Foods opened a small office in Bellford.", entities: [{ entity_text: "Riverbend Foods", entity_type: "ORGANIZATION" }, { entity_text: "Bellford", entity_type: "PLACE" }] },
+      { id: "T2-009", sentence: "Asha Nuru spoke with editors at the daily briefing.", entities: [{ entity_text: "Asha Nuru", entity_type: "PERSON" }] },
+      { id: "T2-010", sentence: "The community garden added a row of herbs.", entities: [{ entity_text: "NONE", entity_type: "NONE" }] },
+      { id: "T2-011", sentence: "Eastlake Museum hosted a design exhibit in Noria.", entities: [{ entity_text: "Eastlake Museum", entity_type: "ORGANIZATION" }, { entity_text: "Noria", entity_type: "PLACE" }] },
+      { id: "T2-012", sentence: "Tariq Bell delivered the schedule to Cedar Point.", entities: [{ entity_text: "Tariq Bell", entity_type: "PERSON" }, { entity_text: "Cedar Point", entity_type: "PLACE" }] },
     ],
   }),
   makeJob({
@@ -249,7 +311,21 @@ const JOBS = [
     scoring: { type: "classification", labels: ["sports", "health", "business", "education", "other"] }, assets: "assets/projects/t3/manifest.json",
     guidelines: ["Choose the article’s main focus.", "A passing example does not change the primary topic.", "Use other for unrelated or too-vague summaries."],
     quiz: [{ q: "A report is mainly about a school’s new reading curriculum.", good: "education", bad: "business", why: "The main subject is learning and schools." }],
-    references: [{ id: "T3-001", text: "The regional team won its final match.", label: "sports" }, { id: "T3-002", text: "A clinic introduced a new malaria screening service.", label: "health" }],
+    sourceColumns: ["article"],
+    references: [
+      { id: "T3-001", article: "The regional team won its final match after scoring twice in the second half.", label: "sports" },
+      { id: "T3-002", article: "A clinic introduced a weekly blood-pressure screening service for local residents.", label: "health" },
+      { id: "T3-003", article: "A small bakery expanded its delivery area after a rise in neighborhood orders.", label: "business" },
+      { id: "T3-004", article: "Teachers at three schools began using a new reading program this term.", label: "education" },
+      { id: "T3-005", article: "A town council approved a new schedule for street cleaning.", label: "other" },
+      { id: "T3-006", article: "The city team won a close final and will play in the regional tournament.", label: "sports" },
+      { id: "T3-007", article: "Researchers tested a low-cost filter designed to remove common water impurities.", label: "health" },
+      { id: "T3-008", article: "A workshop added two staff members and extended its opening hours.", label: "business" },
+      { id: "T3-009", article: "A library opened an evening class to help adults practice mathematics.", label: "education" },
+      { id: "T3-010", article: "The local park added benches and repainted its walking paths.", label: "other" },
+      { id: "T3-011", article: "A runner set a course record during the weekend athletics meet.", label: "sports" },
+      { id: "T3-012", article: "A school garden project teaches pupils how plants grow, with lessons led by teachers.", label: "education" },
+    ],
   }),
   makeJob({
     id: "t4", title: "Flag suspicious messages", modality: "text", kind: "pool", client: "SafeInbox Cooperative",
@@ -260,40 +336,82 @@ const JOBS = [
     scoring: { type: "classification", labels: ["scam", "not_scam"] }, assets: "assets/projects/t4/manifest.json",
     guidelines: ["Scam: impersonation, pressure, requests for money or passwords.", "Not_scam: routine notice with no suspicious request.", "Never open links or contact the sender during labeling."],
     quiz: [{ q: "A message asks for a password through an unfamiliar link.", good: "scam", bad: "not_scam", why: "Credential collection through an unverified link is a strong warning." }],
-    references: [{ id: "T4-001", text: "Pay a fee now to release your prize.", label: "scam" }, { id: "T4-002", text: "Your library book is due Friday; sign in on the usual site.", label: "not_scam" }],
+    sourceColumns: ["message"],
+    references: [
+      { id: "T4-001", message: "Your parcel is held. Pay a small release fee through this unfamiliar page today.", label: "scam" },
+      { id: "T4-002", message: "Reminder: your library book is due Friday. No action is needed unless you want to renew it.", label: "not_scam" },
+      { id: "T4-003", message: "A prize is waiting; send your account password to confirm delivery.", label: "scam" },
+      { id: "T4-004", message: "Service notice: the reading room closes at 6 p.m. on Saturday.", label: "not_scam" },
+      { id: "T4-005", message: "We are from account support. Reply with your one-time code to prevent suspension.", label: "scam" },
+      { id: "T4-006", message: "Your order was packed this morning and is expected tomorrow.", label: "not_scam" },
+      { id: "T4-007", message: "A refund is ready; install this unknown app and enter your card PIN.", label: "scam" },
+      { id: "T4-008", message: "The weekly newsletter is available in your usual account.", label: "not_scam" },
+      { id: "T4-009", message: "A delivery update asks you to confirm your full password at a shortened link.", label: "scam" },
+      { id: "T4-010", message: "The community center will open one hour later on Monday.", label: "not_scam" },
+      { id: "T4-011", message: "Pay a deposit now to reserve a job; the details will follow in chat.", label: "scam" },
+      { id: "T4-012", message: "Your monthly statement is ready to view after signing in through the usual app.", label: "not_scam" },
+    ],
   }),
   makeJob({
     id: "t5", title: "Fact-check short claims", modality: "text", kind: "bid", client: "PlainFact Desk",
     summary: "Judge whether each claim is true, false or cannot_tell from the supplied evidence.",
     detail: "Compare each claim only with the short evidence note in the task. Use true when supported, false when contradicted, and cannot_tell when the note does not settle it. Do not use outside assumptions or treat missing evidence as proof of falsity.",
     payModel: { type: "perTask", rate: 0.08, maxHours: 4, minAccuracy: 0.8 }, deadline: { days: 7, timeZone: "Africa/Kampala" },
-    tools: ["Spreadsheet"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "label"], template: "fact-check-template.csv" },
+    tools: ["Spreadsheet"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "claim", "evidence", "label"], template: "fact-check-template.csv" },
     scoring: { type: "classification", labels: ["true", "false", "cannot_tell"] }, assets: "assets/projects/t5/manifest.json",
     guidelines: ["true means the evidence supports the claim.", "false means the evidence directly contradicts it.", "cannot_tell means relevant evidence is absent or ambiguous."],
     quiz: [{ q: "The evidence gives no date for a claim about when an event happened.", good: "cannot_tell", bad: "false", why: "No evidence does not prove the claim false." }],
-    references: [{ id: "T5-001", text: "Evidence: the clinic opened in 2020. Claim: it opened in 2020.", label: "true" }, { id: "T5-002", text: "Evidence: the clinic opened in 2020. Claim: it opened in 2018.", label: "false" }],
+    sourceColumns: ["claim", "evidence"],
+    references: [
+      { id: "T5-001", claim: "The fictional Pine Clinic opened in 2020.", evidence: "The project record states that Pine Clinic opened in 2020.", label: "true" },
+      { id: "T5-002", claim: "The fictional Pine Clinic opened in 2018.", evidence: "The project record states that Pine Clinic opened in 2020.", label: "false" },
+      { id: "T5-003", claim: "The fictional North Hall has three floors.", evidence: "The note describes North Hall as recently repainted but gives no floor count.", label: "cannot_tell" },
+      { id: "T5-004", claim: "The fictional Bluebird Bus left at 9:00.", evidence: "The log records Bluebird Bus departure at 9:00.", label: "true" },
+      { id: "T5-005", claim: "The fictional Cedar Market opened on Monday.", evidence: "The report says Cedar Market opened on Tuesday.", label: "false" },
+      { id: "T5-006", claim: "The fictional lake is deeper than 20 meters.", evidence: "The survey note gives the lake's width but no depth measurement.", label: "cannot_tell" },
+      { id: "T5-007", claim: "The fictional school has 240 enrolled pupils.", evidence: "A register summary lists 240 enrolled pupils at the school.", label: "true" },
+      { id: "T5-008", claim: "The fictional garden produced 50 baskets of fruit.", evidence: "The report records a harvest of 35 baskets.", label: "false" },
+      { id: "T5-009", claim: "The fictional bridge was designed by an architect named Sora.", evidence: "The brief describes the bridge materials but does not name its designer.", label: "cannot_tell" },
+      { id: "T5-010", claim: "The fictional Riverbend team won the final match.", evidence: "The match summary names Riverbend as the winning team.", label: "true" },
+      { id: "T5-011", claim: "The fictional store sold 90 notebooks this week.", evidence: "The weekly sales ledger records 72 notebooks.", label: "false" },
+      { id: "T5-012", claim: "The fictional train arrived before noon.", evidence: "The station note confirms the train arrived but does not give a time.", label: "cannot_tell" },
+    ],
   }),
   makeJob({
     id: "t6", title: "Rate AI answers for helpfulness", modality: "text", kind: "bid", client: "UsefulReply Research",
     summary: "Rate each answer from 1 to 5 using relevance, correctness and clarity.",
     detail: "Score helpfulness from 1 (not useful) to 5 (fully helpful). Consider whether the answer addresses the prompt, is factually sound and is understandable. A polished but incorrect answer should score low; do not penalize a concise answer that fully responds.",
     payModel: { type: "hourly", rate: 5.5, maxHours: 5, minAccuracy: 0.8 }, deadline: { days: 7, timeZone: "Africa/Kampala" },
-    tools: ["Spreadsheet"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "rating"], template: "ratings-template.csv" },
+    tools: ["Spreadsheet"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "prompt", "ai_answer", "rating"], template: "ratings-template.csv" },
     scoring: { type: "rating", min: 1, max: 5 }, assets: "assets/projects/t6/manifest.json",
-    guidelines: ["1: irrelevant or materially wrong.", "3: partly useful with a significant gap.", "5: correct, relevant and clear; intermediate scores reflect smaller gaps."],
+    guidelines: ["1: irrelevant or materially wrong.", "2: mostly unhelpful or contains a serious error.", "3: partly useful with a significant gap.", "4: correct and relevant with a minor omission.", "5: correct, relevant and clear; intermediate scores reflect smaller gaps.", "Choose an integer from 1 to 5. A score within 1 point of the reference is correct."],
     quiz: [{ q: "An answer is fluent but gives a wrong capital city.", good: "1 — materially wrong", bad: "5 — fully helpful", why: "Factual error is more important than fluent wording." }],
-    references: [{ id: "T6-001", text: "Prompt: name Uganda’s capital. Answer: Kampala is Uganda’s capital.", rating: 5 }, { id: "T6-002", text: "Prompt: name Uganda’s capital. Answer: Entebbe is Uganda’s capital.", rating: 1 }],
+    sourceColumns: ["prompt", "ai_answer"],
+    references: [
+      { id: "T6-001", prompt: "What is 2 + 2?", ai_answer: "2 + 2 equals 4.", rating: 5 },
+      { id: "T6-002", prompt: "What is 2 + 2?", ai_answer: "2 + 2 equals 5.", rating: 1 },
+      { id: "T6-003", prompt: "Name a mammal that can fly.", ai_answer: "A bat is a mammal capable of powered flight.", rating: 5 },
+      { id: "T6-004", prompt: "Name a mammal that can fly.", ai_answer: "Penguins are mammals that fly across oceans.", rating: 1 },
+      { id: "T6-005", prompt: "How can I keep a paper note from getting wet?", ai_answer: "Place it in a sealed waterproof sleeve or container.", rating: 5 },
+      { id: "T6-006", prompt: "How can I keep a paper note from getting wet?", ai_answer: "Put the note outside in the rain so it dries faster.", rating: 1 },
+      { id: "T6-007", prompt: "What does a calendar show?", ai_answer: "A calendar shows dates and can help organize events.", rating: 5 },
+      { id: "T6-008", prompt: "What does a calendar show?", ai_answer: "A calendar is a kind of kitchen appliance.", rating: 1 },
+      { id: "T6-009", prompt: "Give one simple way to save electricity.", ai_answer: "Turn off lights when they are not needed.", rating: 5 },
+      { id: "T6-010", prompt: "Give one simple way to save electricity.", ai_answer: "Electricity cannot be saved, so no action can help.", rating: 1 },
+      { id: "T6-011", prompt: "What is a seed?", ai_answer: "A seed is a plant structure that can grow into a new plant.", rating: 5 },
+      { id: "T6-012", prompt: "What is a seed?", ai_answer: "A seed is a small type of stone formed in a river.", rating: 1 },
+    ],
   }),
   makeJob({
     id: "i1", title: "Classify everyday photographs", modality: "image", kind: "pool", client: "CommonScene Archive",
     summary: "Choose the main visible category: animals, vehicles, food or buildings.",
     detail: "Classify the dominant subject in each approved practice photograph. Choose animals, vehicles, food or buildings. If several subjects appear, label the clearest main subject; use the supplied task note when the image is genuinely ambiguous.",
     payModel: { type: "perTask", rate: 0.04, maxHours: 4, minAccuracy: 0.8 }, deadline: { days: 7, timeZone: "Africa/Kampala" },
-    tools: ["Labelbox", "CVAT"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "label"], template: "image-classification-template.csv" },
+    tools: ["Labelbox", "CVAT"], deliverable: { format: "CSV", idColumn: "file", columns: ["file", "label"], template: "image-classification-template.csv" },
     scoring: { type: "classification", labels: ["animals", "vehicles", "food", "buildings"] }, assets: "assets/projects/i1/manifest.json",
     guidelines: ["Choose the dominant subject, not background objects.", "Use only visible evidence.", "Do not identify people or infer personal details."],
     quiz: [{ q: "A photo centers on a parked bicycle with a building in the background.", good: "vehicles", bad: "buildings", why: "The bicycle is the dominant subject." }],
-    references: [{ id: "I1-001", image: "image-01.jpg", label: "animals" }, { id: "I1-002", image: "image-02.jpg", label: "food" }],
+    references: [],
   }),
   makeJob({
     id: "i2", title: "Draw boxes around bicycles and motorbikes", modality: "image", kind: "bid", client: "StreetObject Index",
@@ -304,29 +422,29 @@ const JOBS = [
     scoring: { type: "bbox", labels: ["motorbike", "bicycle"], iou: 0.5 }, assets: "assets/projects/i2/manifest.json",
     guidelines: ["Use x/y as the top-left pixel and positive width/height.", "Box the visible vehicle extent, not its shadow.", "Export annotations to CSV and preserve image filenames."],
     quiz: [{ q: "A bicycle is partly behind a parked car. What should the box cover?", good: "The visible bicycle extent", bad: "The whole car and bicycle area", why: "Boxes should closely contain the target object." }],
-    references: [{ id: "image-01.jpg", label: "bicycle", x: 30, y: 40, width: 120, height: 80 }, { id: "image-02.jpg", label: "motorbike", x: 55, y: 25, width: 160, height: 110 }],
+    references: [],
   }),
   makeJob({
     id: "i3", title: "Tag image quality", modality: "image", kind: "pool", client: "BrightFrame Review",
     summary: "Mark each image ok, blurry or too_dark.",
     detail: "Judge whether each practice image is usable for its intended label task. Choose ok, blurry or too_dark. Minor compression is acceptable if the subject is readable; select the strongest defect when an image is both dim and slightly soft.",
     payModel: { type: "perTask", rate: 0.03, maxHours: 4, minAccuracy: 0.8 }, deadline: { days: 7, timeZone: "Africa/Kampala" },
-    tools: ["Spreadsheet"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "label"], template: "image-quality-template.csv" },
+    tools: ["Spreadsheet"], deliverable: { format: "CSV", idColumn: "file", columns: ["file", "label"], template: "image-quality-template.csv" },
     scoring: { type: "classification", labels: ["ok", "blurry", "too_dark"] }, assets: "assets/projects/i3/manifest.json",
     guidelines: ["ok means the subject is legible.", "blurry means focus prevents reliable identification.", "too_dark means insufficient light obscures the subject."],
     quiz: [{ q: "The subject is in focus and clearly visible despite mild compression.", good: "ok", bad: "blurry", why: "Minor compression alone does not make an image unusable." }],
-    references: [{ id: "I3-001", image: "image-01.jpg", label: "ok" }, { id: "I3-002", image: "image-02.jpg", label: "too_dark" }],
+    references: [],
   }),
   makeJob({
     id: "i4", title: "Transcribe visible sign and label text", modality: "image", kind: "pool", client: "ReadableWorld Catalog",
     summary: "Transcribe only readable text visible in approved sample images.",
     detail: "Copy the visible words from a sign or product label, preserving wording and reading order. Use [illegible] for an unreadable span; do not guess obscured characters. Do not record personal names, phone numbers, addresses or other personal data.",
     payModel: { type: "perTask", rate: 0.06, maxHours: 4, minAccuracy: 0.8 }, deadline: { days: 7, timeZone: "Africa/Kampala" },
-    tools: ["Spreadsheet"], deliverable: { format: "CSV", idColumn: "task_id", columns: ["task_id", "transcript"], template: "image-transcription-template.csv" },
+    tools: ["Spreadsheet"], deliverable: { format: "CSV", idColumn: "file", columns: ["file", "transcript"], template: "image-transcription-template.csv" },
     scoring: { type: "transcript" }, assets: "assets/projects/i4/manifest.json",
     guidelines: ["Read top-to-bottom and left-to-right unless layout clearly differs.", "Use [illegible] rather than guessing.", "Skip personal data; report any accidentally included."],
     quiz: [{ q: "One word is obscured by glare. What should you enter?", good: "[illegible]", bad: "A guessed word", why: "Transcribe only what is visible." }],
-    references: [{ id: "image-01.jpg", transcript: "FRESH MARKET" }, { id: "image-02.jpg", transcript: "OPEN DAILY" }],
+    references: [],
   }),
   makeJob({
     id: "a1", title: "Transcribe short English clips", modality: "audio", kind: "bid", client: "ClearSpeech Library",
@@ -337,7 +455,7 @@ const JOBS = [
     scoring: { type: "transcript", maxWer: 0.25 }, assets: "assets/projects/a1/manifest.json",
     guidelines: ["Transcribe words, not background sounds.", "Use [unclear] for unintelligible speech.", "Punctuation and case are ignored by scoring."],
     quiz: [{ q: "A short word cannot be understood after replaying the clip.", good: "Mark [unclear]", bad: "Guess from context", why: "Do not invent speech." }],
-    references: [{ id: "clip-01.mp3", transcript: "Please leave the package by the door." }, { id: "clip-02.mp3", transcript: "The meeting begins at nine." }],
+    references: [],
   }),
   makeJob({
     id: "a2", title: "Identify languages in short clips", modality: "audio", kind: "pool", client: "LinguaTag Network",
@@ -348,7 +466,7 @@ const JOBS = [
     scoring: { type: "classification", labels: ["English", "French", "Swahili", "other"] }, assets: "assets/projects/a2/manifest.json",
     guidelines: ["Use the main spoken language.", "Do not infer language from the speaker’s identity.", "Use other for unlisted or no intelligible speech."],
     quiz: [{ q: "Most of a clip is Swahili with one English place name.", good: "Swahili", bad: "English", why: "Choose the dominant language." }],
-    references: [{ id: "clip-01.mp3", label: "English" }, { id: "clip-02.mp3", label: "Swahili" }],
+    references: [],
   }),
   makeJob({
     id: "a3", title: "Tag sound events with start and end times", modality: "audio", kind: "pool", client: "Soundscape Atlas",
@@ -359,7 +477,7 @@ const JOBS = [
     scoring: { type: "sound_events", labels: ["speech", "music", "motorbike", "rain"], overlap: 0.5 }, assets: "assets/projects/a3/manifest.json",
     guidelines: ["Times are seconds from the start of the clip.", "End must be greater than start.", "Separate overlapping event types into separate rows."],
     quiz: [{ q: "Rain continues while music plays. How should you annotate?", good: "Create overlapping rows for both", bad: "Keep only the louder event", why: "Distinct audible events may overlap." }],
-    references: [{ id: "clip-01.mp3", label: "speech", start: 0.4, end: 2.8 }, { id: "clip-02.mp3", label: "rain", start: 1.2, end: 4.5 }],
+    references: [],
   }),
   makeJob({
     id: "v1", title: "Tag actions in short video clips", modality: "video", kind: "bid", client: "MotionNote Studio",
@@ -370,7 +488,7 @@ const JOBS = [
     scoring: { type: "classification", labels: ["walking", "running", "sitting", "waving"] }, assets: "assets/projects/v1/manifest.json",
     guidelines: ["Label visible motion, not presumed intent.", "Walking and running differ by clear running motion.", "Use the task’s primary action when several occur."],
     quiz: [{ q: "A person remains seated and raises a hand to greet someone.", good: "waving", bad: "running", why: "The visible action is a wave." }],
-    references: [{ id: "clip-01.mp4", label: "walking" }, { id: "clip-02.mp4", label: "waving" }],
+    references: [],
   }),
   makeJob({
     id: "v2", title: "Mark when a person waves", modality: "video", kind: "pool", client: "FrameMoment QA",
@@ -378,10 +496,10 @@ const JOBS = [
     detail: "Mark the interval where a person visibly waves in each clip. Use seconds from video start, include the continuous wave, and stop when the arm returns to rest. If no wave is visible, use the provided no_event label and leave times blank.",
     payModel: { type: "perTask", rate: 0.07, maxHours: 4, minAccuracy: 0.8 }, deadline: { days: 7, timeZone: "Africa/Kampala" },
     tools: ["CVAT", "Spreadsheet"], deliverable: { format: "CSV", idColumn: "clip_id", columns: ["clip_id", "label", "start_seconds", "end_seconds"], template: "wave-events-template.csv" },
-    scoring: { type: "video_segments", labels: ["person_waves"], overlap: 0.5 }, assets: "assets/projects/v2/manifest.json",
+    scoring: { type: "video_segments", labels: ["person_waves", "no_event"], overlap: 0.5 }, assets: "assets/projects/v2/manifest.json",
     guidelines: ["Use seconds from the first video frame.", "Start at the first clear wave motion.", "End when waving stops; do not include unrelated gestures."],
     quiz: [{ q: "The arm stays raised but does not move in a wave.", good: "Do not mark a waving event", bad: "Mark the entire clip as waving", why: "A wave requires visible waving motion." }],
-    references: [{ id: "clip-01.mp4", label: "person_waves", start: 1.0, end: 3.0 }, { id: "clip-02.mp4", label: "person_waves", start: 2.0, end: 4.0 }],
+    references: [],
   }),
   makeJob({
     id: "v3", title: "Describe scene conditions in clips", modality: "video", kind: "pool", client: "SceneCount Research",
@@ -392,7 +510,7 @@ const JOBS = [
     scoring: { type: "classification", labels: ["indoor_day_0", "indoor_day_1", "indoor_day_2+", "indoor_night_0", "indoor_night_1", "indoor_night_2+", "outdoor_day_0", "outdoor_day_1", "outdoor_day_2+", "outdoor_night_0", "outdoor_night_1", "outdoor_night_2+"] }, assets: "assets/projects/v3/manifest.json",
     guidelines: ["Day/night is based on visible lighting and scene context.", "Count people physically visible, not posters or dialogue references.", "Use the dominant setting for clips with brief transitions."],
     quiz: [{ q: "A daytime outdoor clip shows three people. Which combined tag fits?", good: "outdoor_day_2+", bad: "indoor_night_1", why: "Use setting, time and 2+ people." }],
-    references: [{ id: "clip-01.mp4", label: "outdoor_day_1" }, { id: "clip-02.mp4", label: "indoor_night_2+" }],
+    references: [],
   }),
 ];
 
@@ -591,13 +709,12 @@ function openJob(id) {
   if (!job) return board();
 
   if (job.kind === "bid") {
-    if (proposalProgress[id] && proposalProgress[id].accepted) return offerJob(job);
+    if (!job.scam && proposalProgress[id] && proposalProgress[id].accepted) return offerJob(job);
     draw(`
       <button class="gh" data-act="back">Back to jobs</button>
       <h1>${esc(job.title)}</h1>
       <p class="mu">Client: ${esc(job.client)}. ${esc(job.pay)}. ${esc(job.seats)}.</p>
-      <div class="panel"><h2>Project preview</h2><p>${esc(job.short)}</p><p class="mu">The full brief and project guidelines are shared after a client accepts your proposal.</p></div>
-      ${job.scam ? `<div class="panel no"><h2>Scam warning</h2><p>Never pay the requested $15 software fee or send identity and bank details through WhatsApp.</p><ul>${job.flags.map((flag) => `<li>${esc(flag)}</li>`).join("")}</ul></div>` : ""}
+      <div class="panel"><h2>Project preview</h2><p>${esc(job.short)}</p><p class="mu">${job.scam ? "Review the listing details before choosing whether to proceed or report it." : "The full brief and project guidelines are shared after a client accepts your proposal."}</p></div>
       <label class="f" for="tool">Tool you will use</label>
       <select id="tool">${job.tools.map((tool) => `<option>${esc(tool)}</option>`).join("")}</select>
       <label class="f" for="pp">Your proposal</label>
@@ -620,6 +737,7 @@ function openJob(id) {
 }
 
 function offerJob(job) {
+  if (job.scam || !job.deliverable) return board();
   const progress = startJobProgress(job);
   if (progress.qualified) return showProjectPack(job, progress);
   draw(`
@@ -683,7 +801,7 @@ function openAssessment(job) {
 
 async function quiz(id, qualification = false) {
   const job = find(id);
-  if (!job) return board();
+  if (!job || job.scam || !job.deliverable) return board();
 
   const got = rows.map((_, index) => {
     const checked = document.querySelector(`input[name=q${index}]:checked`);
@@ -755,12 +873,14 @@ function csvCell(value) {
 
 function valuesForExport(job, item, includeAnswers) {
   if (job.scoring.type === "ner") {
-    const entities = includeAnswers ? item.entities : [{ entity_text: "", type: "" }];
+    const entities = includeAnswers
+      ? item.entities
+      : [{ entity_text: item.entities?.[0]?.entity_text === "NONE" ? "NONE" : "", entity_type: item.entities?.[0]?.entity_type === "NONE" ? "NONE" : "" }];
     return entities.map((entity) => job.deliverable.columns.map((column) => {
-      if (column === "task_id") return item.id;
-      if (column === "entity_text") return entity.entity_text;
-      if (column === "type") return entity.type;
-      return "";
+      if (column === job.deliverable.idColumn) return item.id;
+      if (column === "entity_text") return entity.entity_text || "";
+      if (column === "entity_type") return entity.entity_type || "";
+      return item[column] || "";
     }));
   }
   return [job.deliverable.columns.map((column) => {
@@ -774,14 +894,54 @@ function valuesForExport(job, item, includeAnswers) {
     if (column === "height") return includeAnswers ? (item.height ?? "") : "";
     if (column === "start_seconds") return includeAnswers ? (item.start ?? "") : "";
     if (column === "end_seconds") return includeAnswers ? (item.end ?? "") : "";
-    if (["review_text", "text", "message", "article"].includes(column)) return item.text || "";
+    if (job.sourceColumns?.includes(column)) return item[column] || "";
     return "";
   })];
 }
 
-function projectCsv(job, includeAnswers = false) {
-  const taskRows = job.workItems.slice(0, includeAnswers ? 2 : job.workItems.length)
-    .flatMap((item) => valuesForExport(job, item, includeAnswers));
+const EXAMPLE_ROWS = {
+  j1: [{ review_text: "The parcel was tidy and arrived early.", label: "Positive" }, { review_text: "Excellent, the lid fell off before I reached home.", label: "Negative" }],
+  j3: [{ text: "The instructions were clear and useful.", label: "Positive" }, { text: "The sign lists the room as 12.", label: "Neutral" }],
+  j4: [
+    { prompt: "What is 3 multiplied by 3?", answer_a: "3 multiplied by 3 is 9.", answer_b: "3 multiplied by 3 is 8.", label: "A" },
+    { prompt: "Give one way to keep a book dry.", answer_a: "Leave it outside in a storm.", answer_b: "Keep it in a dry, covered place.", label: "B" },
+  ],
+  t1: [{ message: "Please refund the amount charged twice.", label: "refund" }, { message: "When is my parcel expected?", label: "delivery_status" }],
+  t2: [
+    { sentence: "Nia Sol visited Amber Bay.", entity_text: "Nia Sol", entity_type: "PERSON" },
+    { sentence: "The weather report lists a cloudy afternoon.", entity_text: "NONE", entity_type: "NONE" },
+  ],
+  t3: [{ article: "A local team won the regional final.", label: "sports" }, { article: "A clinic added a weekly health screening.", label: "health" }],
+  t4: [{ message: "Send your password to claim a prize.", label: "scam" }, { message: "Your library book is due on Friday.", label: "not_scam" }],
+  t5: [
+    { claim: "The fictional hall opened in 2022.", evidence: "The note says the hall opened in 2022.", label: "true" },
+    { claim: "The fictional hall has a blue roof.", evidence: "The note gives no information about the roof color.", label: "cannot_tell" },
+  ],
+  t6: [
+    { prompt: "What is 5 + 1?", ai_answer: "5 + 1 equals 6.", rating: 5 },
+    { prompt: "What is 5 + 1?", ai_answer: "5 + 1 equals 9.", rating: 1 },
+  ],
+};
+
+function exampleRows(job) {
+  const samples = EXAMPLE_ROWS[job.id] || [
+    { label: job.scoring.labels?.[0] || "", transcript: "A short fictional sample transcript.", rating: job.scoring.min || 1, x: 0, y: 0, width: 10, height: 10, start: 0, end: 1 },
+    { label: job.scoring.labels?.[1] || job.scoring.labels?.[0] || "", transcript: "Another short fictional sample transcript.", rating: job.scoring.max || 5, x: 10, y: 10, width: 10, height: 10, start: 1, end: 2 },
+  ];
+  return samples.map((sample, index) => ({
+    ...sample,
+    id: `EX-00${index + 1}`,
+    ...(job.scoring.type === "ner" ? { entities: [{ entity_text: sample.entity_text, entity_type: sample.entity_type }] } : {}),
+  }));
+}
+
+function projectCsv(job, includeAnswers = false, mediaFiles = []) {
+  const items = includeAnswers
+    ? exampleRows(job)
+    : job.modality === "text"
+      ? job.workItems
+      : mediaFiles.map((file) => ({ id: file }));
+  const taskRows = items.flatMap((item) => valuesForExport(job, item, includeAnswers));
   return [job.deliverable.columns, ...taskRows].map((row) => row.map(csvCell).join(",")).join("\r\n");
 }
 
@@ -794,6 +954,93 @@ function downloadFile(filename, content, type) {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function crc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function storedZip(files) {
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let localOffset = 0;
+
+  const header = (length, fields) => {
+    const bytes = new Uint8Array(length);
+    const view = new DataView(bytes.buffer);
+    fields(view);
+    return bytes;
+  };
+  const join = (parts) => {
+    const result = new Uint8Array(parts.reduce((size, part) => size + part.length, 0));
+    let offset = 0;
+    for (const part of parts) {
+      result.set(part, offset);
+      offset += part.length;
+    }
+    return result;
+  };
+
+  for (const [name, content] of files) {
+    const nameBytes = encoder.encode(name);
+    const data = encoder.encode(content);
+    const checksum = crc32(data);
+    const localHeader = header(30, (view) => {
+      view.setUint32(0, 0x04034b50, true);
+      view.setUint16(4, 20, true);
+      view.setUint16(6, 0x0800, true);
+      view.setUint16(8, 0, true);
+      view.setUint16(10, 0, true);
+      view.setUint16(12, 0x21, true);
+      view.setUint32(14, checksum, true);
+      view.setUint32(18, data.length, true);
+      view.setUint32(22, data.length, true);
+      view.setUint16(26, nameBytes.length, true);
+      view.setUint16(28, 0, true);
+    });
+    localParts.push(localHeader, nameBytes, data);
+
+    const centralHeader = header(46, (view) => {
+      view.setUint32(0, 0x02014b50, true);
+      view.setUint16(4, 20, true);
+      view.setUint16(6, 20, true);
+      view.setUint16(8, 0x0800, true);
+      view.setUint16(10, 0, true);
+      view.setUint16(12, 0, true);
+      view.setUint16(14, 0x21, true);
+      view.setUint32(16, checksum, true);
+      view.setUint32(20, data.length, true);
+      view.setUint32(24, data.length, true);
+      view.setUint16(28, nameBytes.length, true);
+      view.setUint16(30, 0, true);
+      view.setUint16(32, 0, true);
+      view.setUint16(34, 0, true);
+      view.setUint16(36, 0, true);
+      view.setUint32(38, 0, true);
+      view.setUint32(42, localOffset, true);
+    });
+    centralParts.push(centralHeader, nameBytes);
+    localOffset += localHeader.length + nameBytes.length + data.length;
+  }
+
+  const centralDirectory = join(centralParts);
+  const end = header(22, (view) => {
+    view.setUint32(0, 0x06054b50, true);
+    view.setUint16(4, 0, true);
+    view.setUint16(6, 0, true);
+    view.setUint16(8, files.length, true);
+    view.setUint16(10, files.length, true);
+    view.setUint32(12, centralDirectory.length, true);
+    view.setUint32(16, localOffset, true);
+    view.setUint16(20, 0, true);
+  });
+  return join([...localParts, centralDirectory, end]);
 }
 
 const formatDate = (date) =>
@@ -826,6 +1073,7 @@ function createDeadline(issuedAt) {
 function projectBrief(job, progress) {
   return [
     "PRACTICE PROJECT BRIEF — SIMULATED TRAINING",
+    "The example shows the format only. It does not contain answers to this batch.",
     "",
     `Project: ${job.title}`,
     `Client: ${job.client}`,
@@ -852,23 +1100,78 @@ async function projectResources(job) {
   if (!response.ok) throw new Error(`Project manifest unavailable (${response.status}).`);
   const manifest = await response.json();
   const directory = new URL(".", new URL(job.assets, window.location.href));
-  const availableUrl = (filename, available) => {
+  const availableUrl = async (filename, available) => {
     if (!available) return "";
     if (typeof filename !== "string" || filename.includes("..") || filename.startsWith("/") || filename.includes("\\")) return "";
-    return new URL(filename, directory).href;
+    const url = new URL(filename, directory);
+    const exists = await fetch(url, { method: "HEAD", cache: "no-cache" });
+    return exists.ok ? url.href : "";
   };
   const archiveEntry = manifest.archive;
   const archive = archiveEntry && typeof archiveEntry === "object"
-    ? availableUrl(archiveEntry.path, archiveEntry.available === true)
+    ? await availableUrl(archiveEntry.path, archiveEntry.available === true)
     : "";
-  const files = (Array.isArray(manifest.files) ? manifest.files : []).map((entry) => {
+  const files = await Promise.all((Array.isArray(manifest.files) ? manifest.files : []).map(async (entry) => {
     const path = typeof entry === "string" ? entry : entry && entry.path;
     return {
       name: typeof path === "string" ? path : "Invalid asset entry",
-      url: entry && typeof entry === "object" ? availableUrl(path, entry.available === true) : "",
+      url: entry && typeof entry === "object" ? await availableUrl(path, entry.available === true) : "",
     };
+  }));
+  const referenceResponse = await fetch(new URL("reference.json", directory), { cache: "no-cache" });
+  if (!referenceResponse.ok) throw new Error(`Project reference unavailable (${referenceResponse.status}).`);
+  const reference = await referenceResponse.json();
+  if (!reference || reference.jobId !== job.id || !Array.isArray(reference.answers) || typeof reference.status !== "string") {
+    throw new Error("Project reference file has an invalid format.");
+  }
+  if (reference.answers.some((answer) => !answer || typeof answer !== "object" || Array.isArray(answer))) {
+    throw new Error("Project reference answers must be JSON objects.");
+  }
+  return { archive, files, reference };
+}
+
+async function projectManifestFileNames(job) {
+  const response = await fetch(job.assets, { cache: "no-cache" });
+  if (!response.ok) throw new Error(`Project manifest unavailable (${response.status}).`);
+  const manifest = await response.json();
+  if (!Array.isArray(manifest.files)) throw new Error("Project manifest has no file list.");
+  return manifest.files.map((entry) => {
+    const filename = typeof entry === "string" ? entry : entry && entry.path;
+    if (typeof filename !== "string" || filename.includes("..") || filename.startsWith("/") || filename.includes("\\")) {
+      throw new Error("Project manifest contains an invalid file name.");
+    }
+    return filename;
   });
-  return { archive, files };
+}
+
+function jobWithMediaReference(job, resources) {
+  const answers = resources.reference.answers.map((answer) => ({
+    ...answer,
+    id: answer[job.deliverable.idColumn] || answer.file || answer.image || answer.clip_id,
+    start: answer.start ?? answer.start_seconds,
+    end: answer.end ?? answer.end_seconds,
+  }));
+  const fileNames = new Set(resources.files.map((file) => file.name));
+  if (answers.some((answer) => !answer.id || !fileNames.has(answer.id))) {
+    throw new Error("Project reference includes an answer for an unknown media file.");
+  }
+  if (job.scoring.type !== "sound_events" && job.scoring.type !== "video_segments" &&
+      new Set(answers.map((answer) => answer.id)).size !== answers.length) {
+    throw new Error("Project reference has more than one answer for a media file.");
+  }
+  const answersById = new Map();
+  for (const answer of answers) {
+    if (!answersById.has(answer.id)) answersById.set(answer.id, []);
+    answersById.get(answer.id).push(answer);
+  }
+  return {
+    ...job,
+    workItems: resources.files.map((file) => ({
+      id: file.name,
+      ...(answersById.get(file.name)?.[0] || {}),
+    })),
+    referenceAnswers: answers,
+  };
 }
 
 function toolExportTip(job) {
@@ -879,17 +1182,20 @@ function toolExportTip(job) {
 }
 
 async function showProjectPack(job, progress) {
+  if (job.scam || !job.deliverable || !job.scoring) return board();
   if (progress.submission && progress.submission.qa && progress.submission.qa.accepted) return showPaymentRecord(job, progress);
   if (progress.submission && !progress.submission.qa) return showSubmissionReceipt(job, progress);
-  let resources = { archive: "", files: [] };
+  let resources = { archive: "", files: [], reference: null };
   let manifestError = "";
-  try {
-    resources = await projectResources(job);
-  } catch (error) {
-    manifestError = error instanceof Error ? error.message : "Could not read project manifest.";
+  if (job.modality !== "text") {
+    try {
+      resources = await projectResources(job);
+    } catch (error) {
+      manifestError = error instanceof Error ? error.message : "Could not read project manifest.";
+    }
   }
   const mediaFiles = resources.files.filter((file) => file.url);
-  const hasMissingAssets = !resources.archive || resources.files.some((file) => !file.url);
+  const hasMissingAssets = job.modality !== "text" && (!resources.archive || resources.files.some((file) => !file.url));
   const mediaNotice = hasMissingAssets
     ? '<p class="no" role="status">This project pack is being prepared</p>'
     : "";
@@ -918,6 +1224,7 @@ async function showProjectPack(job, progress) {
     <div class="panel">
       <h2>Project brief</h2>
       <p><b>Issued:</b> ${esc(formatDate(progress.issuedAt))} · <b>Deadline:</b> ${esc(formatDeadline(progress.deadline))} (Africa/Kampala, EAT / UTC+3)</p>
+      <p><b>The example shows the format only. It does not contain answers to this batch.</b></p>
       <p>${esc(job.detail)}</p>
       <h3>Labeling guidelines and edge cases</h3>
       <ul>${job.guidelines.map((rule) => `<li>${esc(rule)}</li>`).join("")}</ul>
@@ -932,7 +1239,11 @@ async function showProjectPack(job, progress) {
       <p><button class="gh" data-act="download-brief" data-id="${job.id}">Download project brief (.txt)</button>
       <button class="gh" data-act="download-template" data-id="${job.id}">Download export template (.csv)</button>
       <button class="gh" data-act="download-example" data-id="${job.id}">Download example of a correct export (.csv)</button></p>
-      ${resources.archive ? `<p><a class="pr" href="${esc(resources.archive)}" download>Download project pack (.zip)</a></p>` : '<p><button class="gh" type="button" disabled>Download project pack (.zip) — being prepared</button></p>'}
+      ${job.modality === "text"
+        ? `<p><button class="pr" data-act="download-pack" data-id="${job.id}">Download project pack (.zip)</button></p>`
+        : resources.archive
+          ? `<p><a class="pr" href="${esc(resources.archive)}" download>Download project pack (.zip)</a></p>`
+          : '<p><button class="gh" type="button" disabled>Download project pack (.zip) — being prepared</button></p>'}
       ${mediaNotice}${links ? `<ul>${links}</ul>` : ""}${manifestError ? `<p class="no" role="alert">${esc(manifestError)}</p>` : ""}${previews}
     </div>
     <div class="panel">
@@ -942,7 +1253,7 @@ async function showProjectPack(job, progress) {
       <p class="mu">${job.payModel.type === "hourly" ? "Hourly practice pay uses these hours, up to the maximum." : "Per-task practice pay is based on accepted tasks. Hours are recorded for the effective hourly rate."}</p>
       <label class="f" for="export-file">Completed CSV file</label>
       <input id="export-file" type="file" accept=".csv,text/csv">
-      <p id="submission-status" class="mu" role="status" aria-live="polite">Required columns: ${esc(job.deliverable.columns.join(", "))}. Upload at least two task rows.</p>
+      <p id="submission-status" class="mu" role="status" aria-live="polite">Required columns: ${esc(job.deliverable.columns.join(", "))}. Upload every task in the batch.</p>
       <p><button class="pr" data-act="submit-export" data-id="${job.id}">Submit completed CSV</button></p>
     </div>
   `);
@@ -950,7 +1261,7 @@ async function showProjectPack(job, progress) {
 
 function openWork(id) {
   const job = find(id);
-  if (!job || !proposalProgress[id] || !proposalProgress[id].qualified) return board();
+  if (!job || job.scam || !job.deliverable || !proposalProgress[id] || !proposalProgress[id].qualified) return board();
   return showProjectPack(job, proposalProgress[id]);
 }
 
@@ -970,6 +1281,37 @@ function showSubmissionReceipt(job, progress) {
       <button class="gh" data-act="back">Back to jobs</button>
     </div>
   `);
+}
+
+async function downloadProjectCsv(job, includeAnswers) {
+  try {
+    const mediaFiles = job.modality === "text"
+      ? []
+      : await projectManifestFileNames(job);
+    const filename = includeAnswers
+      ? `${job.id}-correct-example.csv`
+      : `${job.id}-${job.deliverable.template}`;
+    downloadFile(filename, projectCsv(job, includeAnswers, mediaFiles), "text/csv;charset=utf-8");
+  } catch (error) {
+    const status = document.getElementById("submission-status");
+    const message = error instanceof Error ? error.message : "The project files could not be prepared.";
+    if (status) {
+      status.textContent = `Download unavailable: ${message}`;
+      status.className = "no";
+    } else {
+      alert(`Download unavailable: ${message}`);
+    }
+  }
+}
+
+function downloadTextProjectPack(job, progress) {
+  if (!job || job.scam || job.modality !== "text" || !job.deliverable || !progress) return;
+  const zip = storedZip([
+    ["project-brief.txt", projectBrief(job, progress)],
+    ["export-template.csv", projectCsv(job)],
+    ["example-export.csv", projectCsv(job, true)],
+  ]);
+  downloadFile(`${job.id}-project-pack.zip`, zip, "application/zip");
 }
 
 function parseCsv(text) {
@@ -1029,26 +1371,37 @@ function validateProjectExport(job, csvText) {
   const required = job.deliverable.columns.map((column) => column.toLowerCase());
   const missing = required.filter((header) => !headers.includes(header));
   if (missing.length) throw new Error(`Missing required column${missing.length === 1 ? "" : "s"}: ${missing.join(", ")}.`);
-  if (required.some((header) => headers.lastIndexOf(header) !== headers.indexOf(header))) {
-    throw new Error("A required column name appears more than once.");
+  if (headers.length !== required.length || required.some((header, index) => headers[index] !== header)) {
+    throw new Error(`Use exactly these columns in this order: ${job.deliverable.columns.join(", ")}.`);
   }
   const column = (name) => headers.indexOf(name.toLowerCase());
-  const cell = (values, name) => values[column(name)]?.trim() || "";
+  const rawCell = (values, name) => values[column(name)] ?? "";
+  const cell = (values, name) => rawCell(values, name).trim();
   const expected = new Map(job.workItems.map((item) => [item.id, item]));
   const entries = [];
   for (const [index, values] of records.slice(1).entries()) {
     if (values.length !== headers.length) throw new Error(`CSV row ${index + 2} has ${values.length} fields; expected ${headers.length}.`);
     const id = cell(values, job.deliverable.idColumn);
-    if (!expected.has(id)) throw new Error(`Unknown task ID "${id}" on CSV row ${index + 2}.`);
+    if (!expected.has(id)) throw new Error(`ID "${id}" on CSV row ${index + 2} is not part of this batch.`);
     const entry = { id, line: index + 2, values };
+    const item = expected.get(id);
+    for (const sourceColumn of job.sourceColumns || []) {
+      if (rawCell(values, sourceColumn) !== item[sourceColumn]) {
+        throw new Error(`Source text in "${sourceColumn}" was changed on CSV row ${entry.line}. Restore the supplied task text.`);
+      }
+    }
     if (job.scoring.type === "classification") {
       entry.label = cell(values, "label");
       if (!job.scoring.labels.includes(entry.label)) throw new Error(`Invalid label "${entry.label}" on row ${entry.line}. Allowed labels: ${job.scoring.labels.join(", ")}.`);
     } else if (job.scoring.type === "ner") {
       entry.entity_text = cell(values, "entity_text");
-      entry.type = cell(values, "type");
+      entry.entity_type = cell(values, "entity_type");
       if (!entry.entity_text) throw new Error(`Entity text is missing on CSV row ${entry.line}.`);
-      if (!job.scoring.labels.includes(entry.type)) throw new Error(`Invalid entity type "${entry.type}" on row ${entry.line}. Use ${job.scoring.labels.join(", ")}.`);
+      if (entry.entity_text === "NONE" && entry.entity_type === "NONE") {
+        // The paired NONE values represent a sentence with no named entity.
+      } else if (entry.entity_text === "NONE" || !job.scoring.labels.includes(entry.entity_type)) {
+        throw new Error(`Invalid entity annotation on row ${entry.line}. Use PERSON, PLACE, ORGANIZATION, or the pair NONE,NONE.`);
+      }
     } else if (job.scoring.type === "bbox") {
       entry.label = cell(values, "label");
       if (!job.scoring.labels.includes(entry.label)) throw new Error(`Invalid box label "${entry.label}" on row ${entry.line}.`);
@@ -1064,10 +1417,17 @@ function validateProjectExport(job, csvText) {
     } else if (job.scoring.type === "sound_events" || job.scoring.type === "video_segments") {
       entry.label = cell(values, "label");
       if (!job.scoring.labels.includes(entry.label)) throw new Error(`Invalid event label "${entry.label}" on row ${entry.line}.`);
-      entry.start = Number(cell(values, "start_seconds"));
-      entry.end = Number(cell(values, "end_seconds"));
-      if (!Number.isFinite(entry.start) || !Number.isFinite(entry.end) || entry.start < 0 || entry.end <= entry.start) {
-        throw new Error(`CSV row ${entry.line} has invalid start/end seconds; times must be numbers and end must be greater than start.`);
+      entry.noEvent = job.scoring.type === "video_segments" && entry.label === "no_event";
+      if (entry.noEvent) {
+        if (cell(values, "start_seconds") || cell(values, "end_seconds")) {
+          throw new Error(`CSV row ${entry.line} uses no_event; leave start_seconds and end_seconds blank.`);
+        }
+      } else {
+        entry.start = Number(cell(values, "start_seconds"));
+        entry.end = Number(cell(values, "end_seconds"));
+        if (!Number.isFinite(entry.start) || !Number.isFinite(entry.end) || entry.start < 0 || entry.end <= entry.start) {
+          throw new Error(`CSV row ${entry.line} has invalid start/end seconds; times must be numbers and end must be greater than start.`);
+        }
       }
     } else if (job.scoring.type === "rating") {
       entry.rating = Number(cell(values, "rating"));
@@ -1102,8 +1462,8 @@ function validateProjectExport(job, csvText) {
     score /= entries.length;
   } else if (job.scoring.type === "ner") {
     const target = job.workItems.flatMap((item) => item.entities.map((entity) => ({ id: item.id, ...entity })));
-    const predicted = entries.map(({ id, entity_text, type }) => ({ id, entity_text, type }));
-    const key = (entity) => `${entity.id}\u0000${entity.entity_text}\u0000${entity.type}`;
+    const predicted = entries.map(({ id, entity_text, entity_type }) => ({ id, entity_text, entity_type }));
+    const key = (entity) => `${entity.id}\u0000${entity.entity_text}\u0000${entity.entity_type}`;
     const targetSet = new Set(target.map(key));
     const predictedSet = new Set(predicted.map(key));
     if (predictedSet.size !== predicted.length) throw new Error("Duplicate entity rows were found; keep each entity once.");
@@ -1114,7 +1474,7 @@ function validateProjectExport(job, csvText) {
     score = f1;
     acceptedItems = matches;
     metrics = { precision, recall, f1, matched: matches, predicted: predicted.length, reference: target.length };
-    feedback = predicted.map((item) => ({ id: item.id, text: item.entity_text, submitted: item.type, correct: target.find((ref) => key(ref) === key(item))?.type || "No exact entity match", accepted: targetSet.has(key(item)) }));
+    feedback = predicted.map((item) => ({ id: item.id, text: item.entity_text, submitted: item.entity_type, correct: target.find((ref) => key(ref) === key(item))?.entity_type || "No exact entity match", accepted: targetSet.has(key(item)) }));
   } else if (job.scoring.type === "bbox") {
     const iou = (a, b) => {
       const left = Math.max(a.x, b.x), top = Math.max(a.y, b.y);
@@ -1161,19 +1521,32 @@ function validateProjectExport(job, csvText) {
     score = 1 - averageWer;
     metrics = { wer: averageWer, acceptedByWer: averageWer <= (job.scoring.maxWer || 0.25) };
   } else if (job.scoring.type === "sound_events" || job.scoring.type === "video_segments") {
+    const targets = job.referenceAnswers || job.workItems.map((item) => item);
     const used = new Set();
     feedback = entries.map((entry) => {
-      const item = expected.get(entry.id);
-      const intersection = Math.max(0, Math.min(entry.end, item.end) - Math.max(entry.start, item.start));
-      const union = Math.max(entry.end, item.end) - Math.min(entry.start, item.start);
-      const overlap = union ? intersection / union : 0;
-      const key = `${entry.id}:${entry.label}`;
-      const correct = entry.label === item.label && overlap >= job.scoring.overlap && !used.has(key);
-      if (correct) { score += 1; acceptedItems += 1; used.add(key); }
-      return { id: entry.id, text: item.label, submitted: `${entry.label} · ${entry.start}-${entry.end}s (${Math.round(overlap * 100)}% overlap)`, correct: `${item.label} · ${item.start}-${item.end}s`, accepted: correct };
+      const candidates = targets
+        .map((item, index) => ({ item, index }))
+        .filter(({ item, index }) => item.id === entry.id && item.label === entry.label && !used.has(index));
+      const matches = candidates.map(({ item, index }) => {
+        if (entry.noEvent && item.label === "no_event") return { item, index, overlap: 1 };
+        if (entry.noEvent || item.label === "no_event") return { item, index, overlap: 0 };
+        const intersection = Math.max(0, Math.min(entry.end, item.end) - Math.max(entry.start, item.start));
+        const union = Math.max(entry.end, item.end) - Math.min(entry.start, item.start);
+        return { item, index, overlap: union ? intersection / union : 0 };
+      }).sort((a, b) => b.overlap - a.overlap);
+      const match = matches[0];
+      const correct = Boolean(match && match.overlap >= job.scoring.overlap);
+      if (correct) { score += 1; acceptedItems += 1; used.add(match.index); }
+      return {
+        id: entry.id,
+        text: match?.item.label || entry.label,
+        submitted: entry.noEvent ? entry.label : `${entry.label} · ${entry.start}-${entry.end}s (${Math.round((match?.overlap || 0) * 100)}% overlap)`,
+        correct: match ? match.item.label === "no_event" ? "no_event (no time interval)" : `${match.item.label} · ${match.item.start}-${match.item.end}s` : "No matching reference event",
+        accepted: correct,
+      };
     });
-    score /= job.workItems.length;
-    metrics = { matches: acceptedItems, expected: job.workItems.length };
+    score /= Math.max(targets.length, entries.length);
+    metrics = { matches: acceptedItems, expected: targets.length };
   } else if (job.scoring.type === "rating") {
     feedback = entries.map((entry) => {
       const item = expected.get(entry.id);
@@ -1184,16 +1557,14 @@ function validateProjectExport(job, csvText) {
     score /= entries.length;
     metrics = { withinOnePoint: acceptedItems, total: entries.length };
   }
-  const accepted = job.scoring.type === "transcript"
-    ? metrics.wer <= (job.scoring.maxWer || 0.25)
-    : score >= job.payModel.minAccuracy;
+  const accepted = score >= job.payModel.minAccuracy;
   return { score, feedback, metrics, acceptedItems, accepted, total: entries.length };
 }
 
 async function submitExport(id) {
   const job = find(id);
   const progress = proposalProgress[id];
-  if (!job || !progress || !progress.qualified) return board();
+  if (!job || job.scam || !job.deliverable || !progress || !progress.qualified) return board();
   const status = document.getElementById("submission-status");
   const file = document.getElementById("export-file").files[0];
   if (!file) {
@@ -1213,7 +1584,17 @@ async function submitExport(id) {
   }
   let checked;
   try {
-    checked = validateProjectExport(job, await file.text());
+    let reviewJob = job;
+    if (job.modality !== "text") {
+      const resources = await projectResources(job);
+      if (resources.reference.status !== "configured") {
+        status.textContent = "This project is not ready to be reviewed yet.";
+        status.className = "no";
+        return;
+      }
+      reviewJob = jobWithMediaReference(job, resources);
+    }
+    checked = validateProjectExport(reviewJob, await file.text());
   } catch (error) {
     status.textContent = `Submission not accepted: ${error instanceof Error ? error.message : "The selected CSV could not be read."}`;
     status.className = "no";
@@ -1312,7 +1693,7 @@ async function reviewSubmission(id) {
   const job = find(id);
   const progress = proposalProgress[id];
   const submission = progress && progress.submission;
-  if (!job || !submission) return board();
+  if (!job || job.scam || !job.deliverable || !submission) return board();
   if (submission.qa) return submission.qa.accepted ? showPaymentRecord(job, progress) : showQaResult(job, progress);
   const accepted = Boolean(submission.accepted);
   const reviewedAt = new Date();
@@ -1350,7 +1731,7 @@ function showQaResult(job, progress) {
   const metricSummary = metrics.f1 !== undefined
     ? `<p>NER precision ${(metrics.precision * 100).toFixed(0)}%, recall ${(metrics.recall * 100).toFixed(0)}%, F1 ${(metrics.f1 * 100).toFixed(0)}% (${metrics.matched} matches).</p>`
     : metrics.wer !== undefined
-      ? `<p>Word error rate: ${(metrics.wer * 100).toFixed(1)}% (acceptance limit 25%).</p>`
+      ? `<p>Word error rate: ${(metrics.wer * 100).toFixed(1)}% (pass threshold ${(job.payModel.minAccuracy * 100).toFixed(0)}% text similarity).</p>`
       : metrics.matches !== undefined
         ? `<p>Matches: ${metrics.matches} of ${metrics.expected}.</p>`
         : "";
@@ -1413,7 +1794,7 @@ const checks = (text) => {
 
 async function bid(id) {
   const job = find(id);
-  if (!job) return board();
+  if (!job || (!job.deliverable && !job.scam)) return board();
 
   const text = document.getElementById("pp").value.trim();
   const tool = document.getElementById("tool").value;
@@ -1449,10 +1830,10 @@ async function bid(id) {
       <p class="mu">${statusText(result)}</p>
       ${
         job.scam
-          ? "<p><b>The simulated client did not accept this proposal.</b> Review the warning signs before deciding what to do next.</p>"
+          ? "<p><b>The simulated client did not accept this proposal.</b> Warning signs:</p>"
           : `<div class="panel"><h2>New in-app notification</h2><p><b>${esc(job.client)}</b> accepted your proposal for <b>${esc(job.title)}</b>.</p><p class="mu">Email notification preview only — nothing was sent.</p></div><p>This practice scenario advances you to the next stage so you can explore the workflow.</p>`
       }
-      ${job.scam ? `<p class="no">Warning: this job was a scam. Real clients do not ask for fees or bank details.</p><ul>${job.flags.map((flag) => `<li>${esc(flag)}</li>`).join("")}</ul>` : ""}
+      ${job.scam ? `<ul>${job.flags.map((flag) => `<li>${esc(flag)}</li>`).join("")}</ul>` : ""}
       <h2>Quick check</h2>
       <p class="mu">A simple check, not a grade. A real client reads for specifics.</p>
       <ul>
@@ -2015,13 +2396,13 @@ app.addEventListener("click", (event) => {
 
   if (action === "offer") {
     const job = find(id);
-    if (job && proposalProgress[id] && proposalProgress[id].accepted) offerJob(job);
+    if (job && !job.scam && proposalProgress[id] && proposalProgress[id].accepted) offerJob(job);
     return;
   }
 
   if (action === "qualify") {
     const job = find(id);
-    if (!job || !job.qualification || !proposalProgress[id] || !proposalProgress[id].accepted) return board();
+    if (!job || job.scam || !job.deliverable || !job.qualification || !proposalProgress[id] || !proposalProgress[id].accepted) return board();
     openAssessment(job);
     return;
   }
@@ -2039,7 +2420,7 @@ app.addEventListener("click", (event) => {
   if (action === "payment") {
     const job = find(id);
     const progress = proposalProgress[id];
-    if (job && progress && progress.submission && progress.submission.qa && progress.submission.qa.accepted && progress.submission.payment) {
+    if (job && !job.scam && job.deliverable && progress && progress.submission && progress.submission.qa && progress.submission.qa.accepted && progress.submission.payment) {
       showPaymentRecord(job, progress);
     }
     return;
@@ -2074,7 +2455,7 @@ app.addEventListener("click", (event) => {
   if (action === "download-brief") {
     const job = find(id);
     const progress = proposalProgress[id];
-    if (job && job.workItems && progress && progress.qualified) {
+    if (job && !job.scam && job.workItems && progress && progress.qualified) {
       downloadFile(`${job.id}-project-brief.txt`, projectBrief(job, progress), "text/plain;charset=utf-8");
     }
     return;
@@ -2082,17 +2463,24 @@ app.addEventListener("click", (event) => {
 
   if (action === "download-template") {
     const job = find(id);
-    if (job && job.workItems && proposalProgress[id] && proposalProgress[id].qualified) {
-      downloadFile(`${job.id}-${job.deliverable.template}`, projectCsv(job), "text/csv;charset=utf-8");
+    if (job && !job.scam && job.deliverable && proposalProgress[id] && proposalProgress[id].qualified) {
+      downloadProjectCsv(job, false);
     }
     return;
   }
 
   if (action === "download-example") {
     const job = find(id);
-    if (job && proposalProgress[id] && proposalProgress[id].qualified) {
-      downloadFile(`${job.id}-correct-example.csv`, projectCsv(job, true), "text/csv;charset=utf-8");
+    if (job && !job.scam && job.deliverable && proposalProgress[id] && proposalProgress[id].qualified) {
+      downloadProjectCsv(job, true);
     }
+    return;
+  }
+
+  if (action === "download-pack") {
+    const job = find(id);
+    const progress = proposalProgress[id];
+    if (job && progress && progress.qualified) downloadTextProjectPack(job, progress);
     return;
   }
 

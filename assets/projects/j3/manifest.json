@@ -2,7 +2,7 @@
   "jobId": "j3",
   "archive": {
     "path": "pack.zip",
-    "available": true
+    "available": false
   },
   "files": []
 }
