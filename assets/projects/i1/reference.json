@@ -1,5 +1,15 @@
 {
   "jobId": "i1",
-  "status": "not_configured",
-  "answers": []
+  "status": "configured",
+  "answers": [
+    { "file": "image-01.jpg", "label": "animals" },
+    { "file": "image-02.jpg", "label": "animals" },
+    { "file": "image-03.jpg", "label": "animals" },
+    { "file": "image-04.jpg", "label": "vehicles" },
+    { "file": "image-05.jpg", "label": "vehicles" },
+    { "file": "image-06.jpg", "label": "vehicles" },
+    { "file": "image-07.jpg", "label": "food" },
+    { "file": "image-08.jpg", "label": "food" },
+    { "file": "image-09.jpg", "label": "food" }
+  ]
 }

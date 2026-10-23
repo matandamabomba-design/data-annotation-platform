@@ -1,5 +1,16 @@
 {
   "jobId": "i3",
-  "status": "not_configured",
-  "answers": []
+  "status": "configured",
+  "answers": [
+    { "file": "image-01.jpg", "label": "ok" },
+    { "file": "image-02.jpg", "label": "blurry" },
+    { "file": "image-03.jpg", "label": "ok" },
+    { "file": "image-04.jpg", "label": "too_dark" },
+    { "file": "image-05.jpg", "label": "ok" },
+    { "file": "image-06.jpg", "label": "blurry" },
+    { "file": "image-07.jpg", "label": "too_dark" },
+    { "file": "image-08.jpg", "label": "blurry" },
+    { "file": "image-09.jpg", "label": "ok" },
+    { "file": "image-10.jpg", "label": "too_dark" }
+  ]
 }

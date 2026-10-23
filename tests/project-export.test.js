@@ -14,19 +14,24 @@ const zipStart = source.indexOf("function crc32(", exportEnd);
 const zipEnd = source.indexOf("\nconst formatDate =", zipStart);
 const validationStart = source.indexOf("function parseCsv(", exportEnd);
 const validationEnd = source.indexOf("async function submitExport(", validationStart);
+const mediaReferenceStart = source.indexOf("function jobWithMediaReference(");
+const mediaReferenceEnd = source.indexOf("\nfunction toolExportTip(", mediaReferenceStart);
 const context = { TextEncoder, TextDecoder, Uint8Array, DataView };
 
 assert.ok(jobsStart >= 0 && jobsEnd > jobsStart, "job data must exist");
 assert.ok(exportStart >= 0 && exportEnd > exportStart, "project CSV export helpers must exist");
 assert.ok(zipStart >= 0 && zipEnd > zipStart, "the stored ZIP writer must exist");
 assert.ok(validationStart >= 0 && validationEnd > validationStart, "CSV validation helpers must exist");
+assert.ok(mediaReferenceStart >= 0 && mediaReferenceEnd > mediaReferenceStart, "media answer keys must be applied to project jobs");
 vm.runInNewContext(
   `${source.slice(jobsStart, jobsEnd)}\n${source.slice(exportStart, exportEnd)}\n${source.slice(zipStart, zipEnd)}\n` +
     `${source.slice(validationStart, validationEnd)}\n` +
+    `${source.slice(mediaReferenceStart, mediaReferenceEnd)}\n` +
     "globalThis.jobs = JOBS; globalThis.projectCsv = projectCsv; " +
     "globalThis.valuesForExport = valuesForExport; globalThis.csvCell = csvCell; " +
     "globalThis.parseCsv = parseCsv; globalThis.validateProjectExport = validateProjectExport; " +
-    "globalThis.storedZip = storedZip; globalThis.crc32 = crc32;",
+    "globalThis.storedZip = storedZip; globalThis.crc32 = crc32; " +
+    "globalThis.jobWithMediaReference = jobWithMediaReference;",
   context
 );
 
@@ -88,7 +93,7 @@ test("a different project export and changed source text are rejected", () => {
   );
 });
 
-test("all media templates use manifest filenames and references remain unconfigured", () => {
+test("media templates use manifest filenames and configured image keys match their assets", () => {
   const expectedColumns = {
     i1: ["file", "label"],
     i2: ["image", "label", "x", "y", "width", "height"],
@@ -115,8 +120,38 @@ test("all media templates use manifest filenames and references remain unconfigu
     assert.deepEqual(Array.from(job.deliverable.columns), columns, `${id} columns`);
     assert.deepEqual(Array.from(rows[0]), columns, `${id} exported headers`);
     assert.deepEqual(Array.from(rows.slice(1).map((row) => row[0])), filenames, `${id} manifest IDs`);
-    assert.equal(reference.status, "not_configured", `${id} reference status`);
-    assert.deepEqual(Array.from(reference.answers), [], `${id} reference answers`);
+    const referenceConfigured = id === "i1" || id === "i3";
+    assert.equal(reference.status, referenceConfigured ? "configured" : "not_configured", `${id} reference status`);
+    assert.equal(reference.answers.length, referenceConfigured ? filenames.length : 0, `${id} reference answers`);
+    if (referenceConfigured) {
+      for (const filename of filenames) {
+        assert.ok(fs.existsSync(path.join(directory, filename)), `${id} asset ${filename} exists`);
+      }
+      assert.ok(fs.existsSync(path.join(directory, "pack.zip")), `${id} downloadable image pack exists`);
+    }
+  }
+});
+
+test("student-facing project code does not include media preparation commands", () => {
+  assert.doesNotMatch(source, /\bffmpeg\b|mediaPreparation|Optional media preparation/i);
+});
+
+test("configured image projects score the supplied reference labels", () => {
+  for (const id of ["i1", "i3"]) {
+    const job = Array.from(context.jobs).find((candidate) => candidate.id === id);
+    const directory = path.join(__dirname, "..", "assets", "projects", id);
+    const manifest = JSON.parse(fs.readFileSync(path.join(directory, "manifest.json"), "utf8"));
+    const reference = JSON.parse(fs.readFileSync(path.join(directory, "reference.json"), "utf8"));
+    const filenames = manifest.files.map((entry) => typeof entry === "string" ? entry : entry.path);
+    const reviewJob = context.jobWithMediaReference(job, {
+      files: filenames.map((name) => ({ name })),
+      reference,
+    });
+    const result = context.validateProjectExport(reviewJob, correctReferenceCsv(reviewJob));
+
+    assert.equal(reviewJob.workItems.length, filenames.length, `${id} task count`);
+    assert.equal(result.score, 1, `${id} reference labels score`);
+    assert.equal(result.accepted, true, `${id} reference labels pass`);
   }
 });
 
