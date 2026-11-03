@@ -1,0 +1,58 @@
+CAMPUS DATASET ANNOTATION GUIDELINES
+Task: Object Detection with Hierarchical Attributes (CVAT Setup)
+
+================================================================================
+1. CORE INSTRUCTIONS FOR TEAM ANNOTATORS
+================================================================================
+- Every annotation must map strictly to one of the two core PARENT classes.
+- You must use the properties panel in CVAT to select the required SUB-CLASSIFICATION attribute.
+- Color codes must match the parent configurations exactly to ensure workspace consistency.
+
+================================================================================
+2. PARENT CLASS TAXONOMY & ATTRIBUTE ASSIGNMENTS
+================================================================================
+
+--------------------------------------------------------------------------------
+PARENT CLASS 1: person [COLOR: GREEN / #00FF00]
+--------------------------------------------------------------------------------
+Draw a bounding box around every visible human entity on campus. Once drawn, select 
+one of the following mandatory sub-classification attributes based on their posture:
+
+  Sub-Class Attributes:
+  * walking   : Pedestrians moving across walkways, sidewalks, or pathways.
+                The box must tightly enclose the leading and trailing legs.
+  * standing  : Static, upright individuals who are stationary. 
+                Provides the baseline vertical aspect ratio.
+  * sitting   : Individuals resting on benches, retaining walls, or steps.
+                Note that this changes the body profile to a squarish/horizontal aspect ratio.
+  * bicycling : Any individual actively riding or straddling a bicycle.
+                CRITICAL POLICY: Draw a single unified bounding box that contains BOTH 
+                the person and the complete structural frame of the bicycle.
+
+--------------------------------------------------------------------------------
+PARENT CLASS 2: car [COLOR: ORANGE / #FFA500]
+--------------------------------------------------------------------------------
+Draw a bounding box around all motorized vehicles on or along the perimeter roads. 
+Once drawn, select one of the following structural sub-classification attributes:
+
+  Sub-Class Attributes:
+  * sedan     : Traditional low-slung, three-box configuration passenger vehicles 
+                (e.g., the silver car on the left side of the driveway).
+  * van       : Boxy, high-profile commercial or utility transport vehicles 
+                (e.g., the white delivery van crossing the center background road).
+  * suv       : Sport Utility Vehicles and crossovers with elevated ground clearance 
+                (e.g., the dark vehicle parked on the right edge of the street).
+
+================================================================================
+3. EDGE CASE RESOLUTIONS & QUALITY STANDARDS
+================================================================================
+- Tight Fit Margin: Bounding boxes must fit within 2 pixels of the absolute outermost 
+  silhouette of the target entity. No loose background padding is permitted.
+- Overlap & Occlusions: For pedestrians walking shoulder-to-shoulder, draw separate 
+  tight boxes for each individual. Annotate objects as long as at least 25% of their 
+  structure is visible.
+- Carried Accessories: Backpacks, messenger bags, handheld books, laptops, and luggage 
+  MUST be completely included inside the parent 'person' bounding box.
+- Shadows & Background Exclusion: EXCLUDE all ground-cast shadows. Do not let boxes stretch 
+  to include dark areas on the concrete. Ignore permanent infrastructure like brick walls, 
+  pillars, stone steps, or trees.

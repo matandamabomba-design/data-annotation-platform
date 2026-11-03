@@ -1,0 +1,44 @@
+WASTE RECEPTACLE DATASET ANNOTATION GUIDELINES
+Task: Object Detection with Sub-Classification Attributes (CVAT Setup)
+================================================================================
+1. CORE INSTRUCTIONS FOR TEAM ANNOTATORS
+================================================================================
+• Every annotation must map strictly to the core PARENT class 'waste_bin'.
+• You must use the properties panel in CVAT to select the required SUB-CLASSIFICATION attribute.
+• Color codes must match the parent configuration exactly to ensure workspace consistency.
+
+================================================================================
+2. PARENT CLASS TAXONOMY & ATTRIBUTE ASSIGNMENTS
+
+
+PARENT CLASS: waste_bin [COLOR: BLUE / #0000FF]
+
+Draw a bounding box around every visible container designed for waste, trash, recycling,
+or compost collections. Once drawn, select one of the following mandatory
+sub-classification attributes based on their structural design and context:
+
+Sub-Class Attributes:
+• dumpster         : Large, heavy-duty industrial or commercial waste containers
+typically found outdoors in alleys or parking lots (e.g., the
+large grey steel dumpster on wheels in the top-left pane).
+• sensor_bin       : Modern indoor smart bins with electronic, touchless automated
+opening lids (e.g., the stainless steel bin with an open lid
+in the top-right office pane).
+• outdoor_can      : Slatted, mounted, or heavy-duty bins designed explicitly for public
+parks, walkways, and streetscapes (e.g., the green wooden-slat
+park bin in the bottom-left pane).
+• standard_indoor  : Typical household or utility bins including plastic storage totes,
+step-pedal cans, and basic bins (e.g., the blue recycling tote, red
+pedal bin, and black utility can in the bottom-right kitchen pane).
+
+================================================================================
+3. EDGE CASE RESOLUTIONS & QUALITY STANDARDS
+
+• Tight Fit Margin: Bounding boxes must fit within 2 pixels of the absolute outermost
+silhouette of the target receptacle, including any open lids. No loose background padding is permitted.
+• Grouped Items: For multiple bins placed directly side-by-side (like the blue, red, and black bins),
+draw individual, distinct, tight bounding boxes for each separate receptacle. Do not group them into one big box.
+• Structural Shadows: EXCLUDE all ground-cast shadows from the bounding box. Do not stretch boxes to
+include dark contact zones on the pavement, grass, or kitchen tiles.
+• Grounding & Surroundings: Do not include independent elements like adjacent wooden pillars, desk tables, computers,
+or cardboard debris lying on the floor outside the immediate boundary of the container structure.

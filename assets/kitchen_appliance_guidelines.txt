@@ -1,0 +1,24 @@
+CVAT ANNOTATION GUIDELINE: HOME KITCHEN & APPLIANCES
+===================================================
+Project Domain: Smart Home Automation & Interior Object Recognition
+Task Type: Object Detection (Bounding Boxes / Polygons)
+
+1. OBJECT CLASSES & LABELS
+-------------------------
+- `microwave`: Countertop or built-in microwave ovens.
+- `toaster`: Small electric appliances designed for toasting bread.
+- `blender`: Food preparation appliances featuring a glass or plastic pitcher base.
+- `chair`: Dining room or kitchen table seating units.
+- `mug`: Ceramic or glass beverage cups with handles resting on surfaces.
+- `fruit_bowl`: Display bowls containing fresh produce (label the bowl structure itself; fruits can be separate sub-labels if required by your project taxonomy).
+
+2. ANNOTATION INSTRUCTIONS (BOUNDING BOXES)
+------------------------------------------
+- Structural Completeness: For items like chairs, ensure the box encloses the entire height from the top headrest down to the floor-contact point of the legs.
+- Appliance Handles/Cords: Include physical door handles, control knobs, and attached power cables in the appliance bounding box if they project outwards.
+- Cluttered Surfaces: When mugs or spice shakers are clustered together, separate them into individual overlapping bounding boxes. Do not lump independent targets together into a single box.
+
+3. SPECIAL CASES IN THIS SCENE
+------------------------------
+- Glass Reflection: For objects visible through window panes or glossy cabinet surfaces, do not label reflection ghosts. Only annotate physical objects in the room space.
+- Partial Invisibility: If a chair is hidden underneath the dining table, draw the box to enclose both the exposed backrest and any visible leg sections below.

@@ -1,0 +1,31 @@
+# DATASET ANNOTATION GUIDELINES: LOW-DENSITY CAMPUS ENTITIES
+Document Filename: campus_entities_low_density_guidelines.txt
+Task Type: Object Detection (Bounding Box)
+Dataset Variant: Low-Density / Isolated Postures
+
+## 1. PROJECT OVERVIEW
+The objective of this dataset program is to train an object detection model to recognize and classify individuals on a university campus based on their posture or mode of transit (sitting, walking, bicycling). This low-density dataset serves as a baseline for high-precision tracking with clean spatial separation.
+
+## 2. CLASS TAXONOMY & LABEL DEFINITIONS
+Annotators must evaluate the entire profile of each human subject and assign exactly one of the following classes based on their active pose:
+
+*   person_sitting: Any individual resting on campus furniture (e.g., wooden benches, stone ledges). 
+    *   The bounding box geometry transitions to a square or wide aspect ratio.
+    *   Ensure the box fully encompasses the head, torso, limbs, and feet down to the walkway surface.
+*   person_walking: Any individual in an upright, active walking stride on footpaths or grass.
+    *   The bounding box geometry remains strictly vertical.
+    *   Ensure the box fully captures the maximum width of the leg stride and any carried items (e.g., books, folders, backpacks).
+*   person_bicycling: Any individual actively riding or straddling a bicycle.
+    *   This is a composite class. Annotate the human rider and the bicycle structure together as a single unified bounding box.
+    *   The box must tightly enclose the rider's helmet down to the base of both bicycle tires.
+
+## 3. SPATIAL BOX BOUNDARIES & QUALITY STANDARDS
+To maintain a high-quality dataset and prevent localization errors, all annotators must adhere to the following rules:
+
+*   Tight Boundary Fit: Bounding boxes must tightly constrain the absolute visible limits of the object silhouette. Do not leave loose background padding. Keep the margin within 2-3 pixels of the target's true edge.
+*   Associated Gear & Accessories: 
+    *   Backpacks worn on the back or shoulders must be completely included inside the person's bounding box.
+    *   Handheld objects (notebooks, tablets, laptops) must be completely enclosed within the parent person box.
+    *   Detached, stationary gear resting on the ground or furniture (e.g., a backpack sitting on the ground next to a bench) must be EXCLUDED from the person box. (Note: Check project-specific parameters if detached bags require a separate `backpack` label).
+*   Shadows and Reflections: Completely exclude cast shadows on the pavement, grass, or stone paths from the bounding box dimensions. Bounding boxes must strictly frame physical geometry only.
+*   Background Infrastructure Exclusion: Static campus elements (such as library entryways, light poles, trees, signboards, or building columns) must be ignored and excluded from entity annotations.

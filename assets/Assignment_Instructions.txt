@@ -1,0 +1,43 @@
+Assignment Instructions
+
+Step 1: Select Your Assigned Project Theme
+
+You must choose ONE of the four project options detailed below to serve as your testing framework:
+• Option 1: Low-Density Campus Entities (Tracking individuals based on precise postures)
+• Option 2: Campus Surveillance Hierarchy (Using parent-child structural classes)
+• Option 3: Home Kitchen & Appliances (Labeling dense indoor countertop items)
+• Option 4: Waste Receptacle Dataset (Sub-classifying various trash containers)
+
+Step 2: Set Up Your CVAT Workspace
+
+To ensure optimal performance and eliminate local storage constraints, we will utilize CVAT's cloud tier.
+1. Go to app.cvat.ai and register for a free account.
+2. In the top toolbar, navigate to the Organization tab and click + Create.
+3. Name your organization using your actual identity so it can be verified for grading:
+👉 Format: [YourFirstName]_[YourLastName]_AnnotationLab (e.g., John_Doe_AnnotationLab).
+4. Go to the Members tab inside your workspace, click + Invite Members, and send an invitation to my email: [hana2024ug@gmail.com].
+5. Assign me the role of Owner or Maintainer. (This allows me to switch directly into your workspace to grade your labels, ontology configurations, and guidelines).
+
+Step 3: Build the Project and Ontologies (Constructor Setup)
+
+1. Ensure your newly created organization is selected in your profile menu dropdown.
+2. Navigate to the Projects tab and click + Create a New Project. Name it according to your theme.
+3. Scroll down to the Constructor section. This is where you design your data pipeline schema. Refer to the specific taxonomy instructions below for your selected project. If the project contains sub-classification attributes, configure them using the Select/Dropdown parameter type.
+
+Step 4: Create the Task and Annotate
+
+1. Inside your project folder, click + Create a New Task and upload your practice image.
+2. In the Description/Instructions markdown field, paste the exact guideline text block for your chosen theme.
+3. Leave the Advanced Configuration settings at their default values and click Submit.
+4. Open the generated Job, open the instructions slide-out panel via the? icon on the menu bar to verify your text formatting, and begin labeling.
+5. Once your work is pixel-tight and complete, change the job status dropdown to Completed.
+
+
+
+Grading Criteria
+
+Your project setup will be evaluated based on the following milestones:
+• Organization Architecture: Successful workspace validation, configuration formatting, and member role assignment.
+• Ontology Design Consistency: Structural validation of core parent classes and proper configuration of select attributes in the constructor setup.
+• Annotation Accuracy: Drawing pixel-tight boundary silhouettes within the 2-pixel guideline threshold, excluding background fixtures, and proper inclusion of accessories/gear.
+Submission Deadline: Monday, October 26, 2026, up to midnight (11:59 PM).

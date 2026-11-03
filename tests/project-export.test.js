@@ -130,6 +130,19 @@ test("media templates use manifest filenames and configured image keys match the
       assert.ok(fs.existsSync(path.join(directory, "pack.zip")), `${id} downloadable image pack exists`);
     }
   }
+
+  for (const [id, filenames] of Object.entries({
+    i2: ["campus_1.jpg", "campus_2.jpg"],
+    i4: ["kitchen.jpg", "waste_bin.jpg"],
+  })) {
+    const directory = path.join(__dirname, "..", "assets", "projects", id);
+    const manifest = JSON.parse(fs.readFileSync(path.join(directory, "manifest.json"), "utf8"));
+    assert.deepEqual(Array.from(manifest.files.map((entry) => typeof entry === "string" ? entry : entry.path)), filenames, `${id} supplied asset filenames`);
+    for (const filename of filenames) {
+      assert.ok(fs.existsSync(path.join(directory, filename)), `${id} asset ${filename} exists`);
+    }
+    assert.ok(fs.existsSync(path.join(directory, "pack.zip")), `${id} downloadable image pack exists`);
+  }
 });
 
 test("student-facing project code does not include media preparation commands", () => {
