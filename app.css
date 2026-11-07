@@ -47,6 +47,58 @@ body.home-screen #app > .panel {
   color: var(--ink);
 }
 
+.welcome {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+}
+
+.welcome-copy {
+  max-width: 48rem;
+  margin-bottom: 1.5rem;
+}
+
+.welcome-kicker {
+  margin-bottom: 0.35rem;
+  color: #b9d8ff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.welcome-lead {
+  max-width: 44rem;
+  font-size: 1.08rem;
+}
+
+.welcome-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.welcome-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: var(--radius-card);
+  color: var(--ink);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow-card);
+}
+
+.welcome-card h2 {
+  margin-top: 0;
+  color: var(--ink);
+}
+
+.welcome-card li {
+  margin-bottom: 0.5rem;
+}
+
+body.home-screen #app > .welcome .welcome-start {
+  max-width: 34rem;
+  margin-top: 1.25rem;
+}
+
 .board-hero {
   margin: calc(-1 * var(--space-5)) calc(-1 * var(--space-4)) var(--space-5);
   padding: var(--space-5) var(--space-4);
@@ -121,6 +173,17 @@ button {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.58;
+}
+
+.coming-soon-badge {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--sf);
+  border: 1px solid var(--ln);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .tab,
@@ -321,9 +384,11 @@ li {
   main {
     padding: var(--space-4) var(--space-3) calc(5rem + env(safe-area-inset-bottom));
   }
-
   body.home-screen #app {
     padding: 3rem var(--space-3) calc(5rem + env(safe-area-inset-bottom));
+  }
+  .welcome-grid {
+    grid-template-columns: 1fr;
   }
   body.home-screen main {
     padding-bottom: calc(5rem + env(safe-area-inset-bottom));

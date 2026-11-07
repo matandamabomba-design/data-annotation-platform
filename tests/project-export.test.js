@@ -120,7 +120,7 @@ test("media templates use manifest filenames and configured image keys match the
     assert.deepEqual(Array.from(job.deliverable.columns), columns, `${id} columns`);
     assert.deepEqual(Array.from(rows[0]), columns, `${id} exported headers`);
     assert.deepEqual(Array.from(rows.slice(1).map((row) => row[0])), filenames, `${id} manifest IDs`);
-    const referenceConfigured = id === "i1" || id === "i3";
+    const referenceConfigured = id === "i1" || id === "i3" || id === "i4";
     assert.equal(reference.status, referenceConfigured ? "configured" : "not_configured", `${id} reference status`);
     assert.equal(reference.answers.length, referenceConfigured ? filenames.length : 0, `${id} reference answers`);
     if (referenceConfigured) {
@@ -133,7 +133,7 @@ test("media templates use manifest filenames and configured image keys match the
 
   for (const [id, filenames] of Object.entries({
     i2: ["campus_1.jpg", "campus_2.jpg"],
-    i4: ["kitchen.jpg", "waste_bin.jpg"],
+    i4: Array.from({ length: 12 }, (_, index) => `image-${String(index + 1).padStart(2, "0")}.jpg`),
   })) {
     const directory = path.join(__dirname, "..", "assets", "projects", id);
     const manifest = JSON.parse(fs.readFileSync(path.join(directory, "manifest.json"), "utf8"));
@@ -149,8 +149,16 @@ test("student-facing project code does not include media preparation commands", 
   assert.doesNotMatch(source, /\bffmpeg\b|mediaPreparation|Optional media preparation/i);
 });
 
+test("board availability fetches manifest and reference and disables unavailable jobs", () => {
+  assert.match(source, /function mediaJobReady/);
+  assert.match(source, /loadMediaReadiness\(\)/);
+  assert.match(source, /reference\.status === "configured"/);
+  assert.match(source, /Coming soon/);
+  assert.match(source, /disabled/);
+});
+
 test("configured image projects score the supplied reference labels", () => {
-  for (const id of ["i1", "i3"]) {
+  for (const id of ["i1", "i3", "i4"]) {
     const job = Array.from(context.jobs).find((candidate) => candidate.id === id);
     const directory = path.join(__dirname, "..", "assets", "projects", id);
     const manifest = JSON.parse(fs.readFileSync(path.join(directory, "manifest.json"), "utf8"));

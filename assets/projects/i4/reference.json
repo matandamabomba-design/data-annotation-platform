@@ -1,5 +1,54 @@
 {
   "jobId": "i4",
-  "status": "not_configured",
-  "answers": []
+  "status": "configured",
+  "answers": [
+    {
+      "file": "image-01.jpg",
+      "transcript": "FRESH MARKET"
+    },
+    {
+      "file": "image-02.jpg",
+      "transcript": "OPEN DAILY"
+    },
+    {
+      "file": "image-03.jpg",
+      "transcript": "NO PARKING"
+    },
+    {
+      "file": "image-04.jpg",
+      "transcript": "BUS STOP"
+    },
+    {
+      "file": "image-05.jpg",
+      "transcript": "EXIT"
+    },
+    {
+      "file": "image-06.jpg",
+      "transcript": "KEEP LEFT"
+    },
+    {
+      "file": "image-07.jpg",
+      "transcript": "WATER FOR SALE"
+    },
+    {
+      "file": "image-08.jpg",
+      "transcript": "PRICE 2,000 SHS"
+    },
+    {
+      "file": "image-09.jpg",
+      "transcript": "FISH TODAY"
+    },
+    {
+      "file": "image-10.jpg",
+      "transcript": "CLOSED ON SUNDAY"
+    },
+    {
+      "file": "image-11.jpg",
+      "transcript": "WASH YOUR HANDS"
+    },
+    {
+      "file": "image-12.jpg",
+      "transcript": "SCHOOL ZONE DRIVE SLOWLY"
+    }
+  ]
 }

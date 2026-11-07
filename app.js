@@ -556,6 +556,39 @@ let summary = "";
 const proposalProgress = {};
 let visibleJobCount = 6;
 let modalityFilter = "all";
+const mediaReadiness = {};
+
+function mediaJobReady(job, readiness = mediaReadiness) {
+  return job.modality === "text" || readiness[job.id] === true;
+}
+
+async function loadMediaReadiness() {
+  await Promise.all(JOBS.filter((job) => job.modality !== "text").map(async (job) => {
+    try {
+      const directory = new URL(".", new URL(job.assets, window.location.href));
+      const [manifestResponse, referenceResponse] = await Promise.all([
+        fetch(job.assets, { cache: "no-cache" }),
+        fetch(new URL("reference.json", directory), { cache: "no-cache" }),
+      ]);
+      if (!manifestResponse.ok || !referenceResponse.ok) throw new Error("Asset metadata unavailable.");
+      const [manifest, reference] = await Promise.all([
+        manifestResponse.json(),
+        referenceResponse.json(),
+      ]);
+      const availableFiles = Array.isArray(manifest.files)
+        ? manifest.files.filter((entry) =>
+            entry && typeof entry === "object" && entry.available === true && typeof entry.path === "string"
+          )
+        : [];
+      mediaReadiness[job.id] = reference.status === "configured" &&
+        manifest.archive && manifest.archive.available === true &&
+        availableFiles.length > 0;
+    } catch {
+      mediaReadiness[job.id] = false;
+    }
+  }));
+  if (document.body.classList.contains("board-screen")) board();
+}
 
 const find = (id) => JOBS.find((job) => job.id === id);
 const kind = { bid: "Bidding", qual: "Qualification", pool: "Task pool" };
@@ -607,13 +640,36 @@ const draw = (html) => {
 
 function gate() {
   draw(`
-    <h1>Annotation work hub</h1>
-    <p class="mu">Find a job, send a proposal or pass a test. Practice only. No real clients.</p>
-    <div class="panel">
-      <label class="f" for="nm">Your full name</label>
-      <input id="nm" type="text" autocomplete="off" placeholder="Write your name as in class">
-      <p><button class="pr" data-act="enter">Enter the hub</button></p>
-    </div>
+    <section class="welcome" aria-labelledby="welcome-title">
+      <div class="welcome-copy">
+        <p class="welcome-kicker">Welcome to the practice annotation hub</p>
+        <h1 id="welcome-title">Turn careful attention into useful training data</h1>
+        <p class="welcome-lead">This platform helps learners practise real-style annotation work in a safe environment. Every project is fictional, every payment is practice money, and you are never asked to work for a real client.</p>
+      </div>
+      <div class="welcome-grid">
+        <article class="welcome-card">
+          <h2>What you can do</h2>
+          <ul>
+            <li>Browse text, image, audio and video projects.</li>
+            <li>Submit proposals, pass qualification tests and complete task batches.</li>
+            <li>Download templates, review sample exports and track practice earnings.</li>
+          </ul>
+        </article>
+        <article class="welcome-card">
+          <h2>How to work effectively</h2>
+          <ul>
+            <li>Read the project brief and labeling guidelines before starting.</li>
+            <li>Use only the supplied evidence and keep task IDs unchanged.</li>
+            <li>Flag unclear cases instead of guessing, and follow the expected file format.</li>
+          </ul>
+        </article>
+      </div>
+      <div class="welcome-start panel">
+        <label class="f" for="nm">Your full name</label>
+        <input id="nm" type="text" autocomplete="off" placeholder="Write your name as in class">
+        <p><button class="pr" data-act="enter">Explore the work hub</button></p>
+      </div>
+    </section>
   `);
   document.body.classList.add("home-screen");
   document.body.classList.remove("board-screen");
@@ -663,6 +719,7 @@ function board() {
           <div class="card">
             <div>
               <h2>${esc(job.title)}</h2>
+              ${job.modality !== "text" && !mediaJobReady(job) ? '<span class="coming-soon-badge">Coming soon</span>' : ""}
               ${job.client ? `<p class="mu">Client: ${esc(job.client)}</p>` : ""}
               <p>${esc(job.summary)}</p>
               <div class="meta">
@@ -676,8 +733,8 @@ function board() {
               <div class="pay">${esc(job.pay)}</div>
               ${job.kind === "qual" ? '<span class="step">1 step to qualify</span>' : ""}
               ${job.kind === "bid" && proposalProgress[job.id] && proposalProgress[job.id].accepted ? '<span class="step">Proposal accepted</span>' : ""}
-              <button class="${job.kind === "pool" ? "pr" : "gh"}" data-act="open" data-id="${job.id}">
-                ${job.kind === "bid" ? proposalProgress[job.id] && proposalProgress[job.id].accepted ? "View accepted offer" : "View and bid" : job.kind === "qual" ? "Start qualification" : "Start project"}
+              <button class="${job.kind === "pool" ? "pr" : "gh"}" data-act="open" data-id="${job.id}"${job.modality !== "text" && !mediaJobReady(job) ? " disabled" : ""}>
+                ${job.modality !== "text" && !mediaJobReady(job) ? "Coming soon" : job.kind === "bid" ? proposalProgress[job.id] && proposalProgress[job.id].accepted ? "View accepted offer" : "View and bid" : job.kind === "qual" ? "Start qualification" : "Start project"}
               </button>
             </div>
           </div>
@@ -707,6 +764,7 @@ function startJobProgress(job) {
 function openJob(id) {
   const job = find(id);
   if (!job) return board();
+  if (job.modality !== "text" && !mediaJobReady(job)) return board();
 
   if (job.kind === "bid") {
     if (!job.scam && proposalProgress[id] && proposalProgress[id].accepted) return offerJob(job);
@@ -1091,6 +1149,7 @@ function projectBrief(job, progress) {
     `Scoring: ${job.scoring.type}; pass threshold ${Math.round(job.payModel.minAccuracy * 100)}%.`,
     `Pay: Example values. Real platforms set their own. ${job.payModel.type === "hourly" ? `$${job.payModel.rate.toFixed(2)} per hour, up to ${job.payModel.maxHours} hours.` : `$${job.payModel.rate.toFixed(2)} per accepted task.`}`,
     "",
+    ...(job.modality === "text" ? [] : ["Practice media created or AI-generated for training. It is not real client data.", ""]),
     "This is practice work only. No real client receives a submission.",
   ].join("\n");
 }
@@ -1225,6 +1284,7 @@ async function showProjectPack(job, progress) {
       <h2>Project brief</h2>
       <p><b>Issued:</b> ${esc(formatDate(progress.issuedAt))} · <b>Deadline:</b> ${esc(formatDeadline(progress.deadline))} (Africa/Kampala, EAT / UTC+3)</p>
       <p><b>The example shows the format only. It does not contain answers to this batch.</b></p>
+      ${job.modality !== "text" ? "<p>Practice media created or AI-generated for training. It is not real client data.</p>" : ""}
       <p>${esc(job.detail)}</p>
       <h3>Labeling guidelines and edge cases</h3>
       <ul>${job.guidelines.map((rule) => `<li>${esc(rule)}</li>`).join("")}</ul>
@@ -1237,8 +1297,10 @@ async function showProjectPack(job, progress) {
     <div class="panel">
       <h2>Downloads</h2>
       <p><button class="gh" data-act="download-brief" data-id="${job.id}">Download project brief (.txt)</button>
-      <button class="gh" data-act="download-template" data-id="${job.id}">Download export template (.csv)</button>
-      <button class="gh" data-act="download-example" data-id="${job.id}">Download example of a correct export (.csv)</button></p>
+      ${job.modality === "text" || resources.files.length > 0 && resources.reference?.status === "configured"
+        ? `<button class="gh" data-act="download-template" data-id="${job.id}">Download export template (.csv)</button>
+      <button class="gh" data-act="download-example" data-id="${job.id}">Download example of a correct export (.csv)</button>`
+        : ""}</p>
       ${job.modality === "text"
         ? `<p><button class="pr" data-act="download-pack" data-id="${job.id}">Download project pack (.zip)</button></p>`
         : resources.archive
@@ -2455,7 +2517,7 @@ app.addEventListener("click", (event) => {
   if (action === "download-brief") {
     const job = find(id);
     const progress = proposalProgress[id];
-    if (job && !job.scam && job.workItems && progress && progress.qualified) {
+    if (job && !job.scam && progress && progress.qualified) {
       downloadFile(`${job.id}-project-brief.txt`, projectBrief(job, progress), "text/plain;charset=utf-8");
     }
     return;
@@ -2512,4 +2574,5 @@ app.addEventListener("keydown", (event) => {
 addWalletControls();
 chatInit();
 restorePracticeState();
+loadMediaReadiness();
 initFirebase();

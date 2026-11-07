@@ -5,15 +5,11 @@
     "available": true
   },
   "files": [
-    { "path": "image-01.jpg", "available": true },
     { "path": "image-02.jpg", "available": true },
-    { "path": "image-03.jpg", "available": true },
     { "path": "image-04.jpg", "available": true },
-    { "path": "image-05.jpg", "available": true },
     { "path": "image-06.jpg", "available": true },
     { "path": "image-07.jpg", "available": true },
     { "path": "image-08.jpg", "available": true },
-    { "path": "image-09.jpg", "available": true },
     { "path": "image-10.jpg", "available": true }
   ]
 }

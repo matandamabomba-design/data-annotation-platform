@@ -18,12 +18,15 @@ Matanda: add only media that you own or are authorized to use. Never add identif
 | i2 Vehicle boxes | `pack.zip`, `image-01.jpg` through `image-12.jpg` | 12 images maximum, each 1600 px wide or less and under 300 KB; own photos or public-domain only. |
 | i3 Image quality | `pack.zip`, `image-01.jpg` through `image-12.jpg` | 12 images maximum, each 1600 px wide or less and under 300 KB; own photos or public-domain only. |
 | i4 Image transcription | `pack.zip`, `image-01.jpg` through `image-12.jpg` | 12 images maximum, each 1600 px wide or less and under 300 KB; own photos or public-domain only. Avoid signs containing personal data. |
-| a1 English transcription | `pack.zip`, `clip-01.mp3`, `clip-02.mp3` | MP3, 30–60 seconds each, under 1 MB each; own recordings with written consent or public-domain only. |
-| a2 Language tags | `pack.zip`, `clip-01.mp3`, `clip-02.mp3` | MP3, 30–60 seconds each, under 1 MB each; own recordings with written consent or public-domain only. |
-| a3 Sound events | `pack.zip`, `clip-01.mp3`, `clip-02.mp3` | MP3, 30–60 seconds each, under 1 MB each; own recordings with written consent or public-domain only. |
-| v1 Action tags | `pack.zip`, `clip-01.mp4`, `clip-02.mp4` | MP4, 10–20 seconds, 720p, under 5 MB each; own video with written consent or public-domain only. |
-| v2 Wave events | `pack.zip`, `clip-01.mp4`, `clip-02.mp4` | MP4, 10–20 seconds, 720p, under 5 MB each; own video with written consent or public-domain only. |
-| v3 Scene tags | `pack.zip`, `clip-01.mp4`, `clip-02.mp4` | MP4, 10–20 seconds, 720p, under 5 MB each; own video with written consent or public-domain only. |
+| a1 English transcription | `pack.zip`, `clip-01.mp3`, `clip-02.mp3` | MP3, 15–60 seconds each, under 1 MB each; own recordings with written consent or public-domain only. |
+| a2 Language tags | `pack.zip`, `clip-01.mp3`, `clip-02.mp3` | MP3, 15–60 seconds each, under 1 MB each; own recordings with written consent or public-domain only. |
+| a3 Sound events | `pack.zip`, `clip-01.mp3`, `clip-02.mp3` | MP3, 15–60 seconds each, under 1 MB each; own recordings with written consent or public-domain only. |
+| v1 Action tags | `pack.zip`, `clip-01.mp4`, `clip-02.mp4` | MP4, 5–20 seconds, 720p, under 5 MB each; own video with written consent or public-domain only. |
+| v2 Wave events | `pack.zip`, `clip-01.mp4`, `clip-02.mp4` | MP4, 5–20 seconds, 720p, under 5 MB each; own video with written consent or public-domain only. |
+| v3 Scene tags | `pack.zip`, `clip-01.mp4`, `clip-02.mp4` | MP4, 5–20 seconds, 720p, under 5 MB each; own video with written consent or public-domain only. |
+
+i2 currently has two bicycle photos named `campus_1.jpg` and `campus_2.jpg`; motorbike photos must be added later.
+Audio clips should be 15 to 60 seconds. Video clips should be 5 to 20 seconds. Image packs may contain 12 images maximum.
 
 Text-only project packs are generated in the browser from the current project brief and CSV data. Do not add static text-job ZIPs. For image, audio and video jobs, keep each pack under its matching job directory and do not mark a file available until it has been added at the listed path. In `manifest.json`, change an available file from a string such as `"image-01.jpg"` to an object such as `{"path":"image-01.jpg","available":true}`. Mark the archive with `{"path":"pack.zip","available":true}` only after adding the complete pack. Leave unavailable entries as strings (or set `available` to `false`); the page shows the preparation notice and omits their links and previews until files are available.
 
@@ -84,3 +87,15 @@ For image transcription job `i4`, use `file` instead of `clip_id`.
 ```
 
 Use the exact filenames from `manifest.json`. A clip may have multiple event/segment rows. Only use fictional or appropriately licensed media and data.
+
+## For the site owner: finishing a media pack
+
+Run the owner-only pack tool from the repository root:
+
+```text
+node tools/make-pack.js <jobId> [answers.csv]
+```
+
+The tool loads the job's allowed labels and CSV shape from `app.js`, lists the real media files, validates file limits and metadata, rebuilds `manifest.json` and a flat `pack.zip`, and converts an optional answers CSV into `reference.json`.
+
+Use the shape shown above for the job's scoring type. The answers CSV must contain every media filename, use only the job's allowed labels, and give valid numbers. Labels are never guessed.
